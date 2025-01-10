@@ -3,3 +3,4 @@ Flask-Login
 redis
 APScheduler
 SQLAlchemy
+flask_sqlalchemy
