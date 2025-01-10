@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">资金股份委托成交情况</h2>
+
+    <!-- 查询表单 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            查询条件
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="name" class="form-label">姓名：</label>
+                        <input type="text" class="form-control" id="name">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="listCount" class="form-label">榜单数：</label>
+                        <input type="text" class="form-control" id="listCount">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="listAsset" class="form-label">榜单资产（元）：</label>
+                        <input type="text" class="form-control" id="listAsset">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fundDifference" class="form-label">资金存取差额（元）：</label>
+                        <input type="text" class="form-control" id="fundDifference">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label for="orderCount" class="form-label">委托笔数：</label>
+                        <input type="text" class="form-control" id="orderCount" value="179" readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="orderAmount" class="form-label">委托金额（元）：</label>
+                        <input type="text" class="form-control" id="orderAmount">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="tradeCount" class="form-label">成交笔数：</label>
+                        <input type="text" class="form-control" id="tradeCount" value="198" readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="tradeVolume" class="form-label">成交量（元）：</label>
+                        <input type="text" class="form-control" id="tradeVolume">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label for="depositCount" class="form-label">资金存入笔数：</label>
+                        <input type="text" class="form-control" id="depositCount" value="7" readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="depositAmount" class="form-label">资金存入金额（元）：</label>
+                        <input type="text" class="form-control" id="depositAmount">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="withdrawCount" class="form-label">资金取出笔数：</label>
+                        <input type="text" class="form-control" id="withdrawCount" value="9" readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="withdrawAmount" class="form-label">资金取出金额（元）：</label>
+                        <input type="text" class="form-control" id="withdrawAmount">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="otcOrderAmount" class="form-label">OTC系统产品委托金额：</label>
+                        <input type="text" class="form-control" id="otcOrderAmount" value="0.00" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="realTimeOrderAmount" class="form-label">实时集中交易场外产品委托金额：</label>
+                        <input type="text" class="form-control" id="realTimeOrderAmount">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <label for="fundAccount" class="form-label">资金账户：</label>
+                        <input type="text" class="form-control" id="fundAccount">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="securityCode" class="form-label">证券代码：</label>
+                        <input type="text" class="form-control" id="securityCode">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="businessSummary" class="form-label">业务摘要：</label>
+                        <select class="form-select" id="businessSummary">
+                            <option>一清选择</option>
+                            <!-- 其他选项 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="smartInvestment" class="form-label">是否智能定投：</label>
+                        <select class="form-select" id="smartInvestment">
+                            <option>全部</option>
+                            <!-- 其他选项 -->
+                        </select>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" class="btn btn-primary">查询</button>
+                        <button type="reset" class="btn btn-secondary">重置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 委托成交明细表格 -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            委托成交明细
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>资金账户</th>
+                        <th>账户名称</th>
+                        <th>委托时间</th>
+                        <th>证券代码</th>
+                        <th>证券名称</th>
+                        <th>业务摘要</th>
+                        <th>委托价格（元）</th>
+                        <th>成交数量</th>
+                        <th>发生金额（元）</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trade in trades %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ trade.fund_account }}</td>
+                        <td>{{ trade.account_name }}</td>
+                        <td>{{ trade.order_time }}</td>
+                        <td>{{ trade.security_code }}</td>
+                        <td>{{ trade.security_name }}</td>
+                        <td>{{ trade.business_summary }}</td>
+                        <td>{{ trade.order_price }}</td>
+                        <td>{{ trade.trade_quantity }}</td>
+                        <td>{{ trade.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

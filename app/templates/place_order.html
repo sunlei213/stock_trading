@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">股票委托</h2>
+
+    <!-- 委托表单 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            委托信息
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('main.place_order') }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="stockSymbol" class="form-label">证券代码：</label>
+                        <input type="text" class="form-control" id="stockSymbol" name="stock_symbol" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="stockName" class="form-label">证券名称：</label>
+                        <input type="text" class="form-control" id="stockName" name="stock_name" required>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="orderType" class="form-label">委托类型：</label>
+                        <select class="form-select" id="orderType" name="order_type" required>
+                            <option value="buy">买入</option>
+                            <option value="sell">卖出</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="orderPrice" class="form-label">委托价格（元）：</label>
+                        <input type="number" step="0.01" class="form-control" id="orderPrice" name="order_price" required>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="orderQuantity" class="form-label">委托数量：</label>
+                        <input type="number" class="form-control" id="orderQuantity" name="order_quantity" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="orderAmount" class="form-label">委托金额（元）：</label>
+                        <input type="number" step="0.01" class="form-control" id="orderAmount" name="order_amount" readonly>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-12 text-end">
+                        <button type="submit" class="btn btn-primary">提交委托</button>
+                        <button type="reset" class="btn btn-secondary">重置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 委托记录表格 -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            最近委托记录
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>委托时间</th>
+                        <th>证券代码</th>
+                        <th>证券名称</th>
+                        <th>委托类型</th>
+                        <th>委托价格（元）</th>
+                        <th>委托数量</th>
+                        <th>委托状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ order.order_time }}</td>
+                        <td>{{ order.stock_symbol }}</td>
+                        <td>{{ order.stock_name }}</td>
+                        <td>{{ '买入' if order.order_type == 'buy' else '卖出' }}</td>
+                        <td>{{ order.order_price }}</td>
+                        <td>{{ order.order_quantity }}</td>
+                        <td>{{ order.status }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 动态计算委托金额 -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const orderPrice = document.getElementById('orderPrice');
+        const orderQuantity = document.getElementById('orderQuantity');
+        const orderAmount = document.getElementById('orderAmount');
+
+        function calculateAmount() {
+            const price = parseFloat(orderPrice.value) || 0;
+            const quantity = parseFloat(orderQuantity.value) || 0;
+            orderAmount.value = (price * quantity).toFixed(2);
+        }
+
+        orderPrice.addEventListener('input', calculateAmount);
+        orderQuantity.addEventListener('input', calculateAmount);
+    });
+</script>
+{% endblock %}

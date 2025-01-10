@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">账户资金</h2>
+
+    <!-- 账户资金信息 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            账户信息
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">账户名称：</label>
+                    <p class="form-control-static">{{ account.account_name }}</p>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">账户余额（元）：</label>
+                    <p class="form-control-static">{{ account.balance }}</p>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">持仓市值（元）：</label>
+                    <p class="form-control-static">{{ account.market_value }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 资金操作 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            资金操作
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="depositAmount" class="form-label">存入金额（元）：</label>
+                        <input type="number" class="form-control" id="depositAmount">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="withdrawAmount" class="form-label">取出金额（元）：</label>
+                        <input type="number" class="form-control" id="withdrawAmount">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-12 text-end">
+                        <button type="submit" class="btn btn-primary">确认存入</button>
+                        <button type="submit" class="btn btn-secondary">确认取出</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
