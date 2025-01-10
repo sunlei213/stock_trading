@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from .redis_client import redis_client
-from app import db
+from app import db, redis_client
 from app.models import User, Account, Order, Trade
 
 bp = Blueprint('main', __name__)

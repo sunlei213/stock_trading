@@ -1,11 +1,13 @@
 import os
 
 class Config:
-    REDIS_HOST = 'localhost'
-    REDIS_PORT = 6379
-    REDIS_DB = 0
-    REDIS_POOL_SIZE = 10
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'A0Zrk8j/3yX4R~XHH!jmN]LWX/,?RT' # 用于Flask-Login的密钥
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///test.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    LOG_FILE = 'app.log'
+    LOG_LEVEL = 'INFO'
 
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key' # 用于Flask-Login的密钥
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///stock_trading.db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False  
+class redisConfig:
+    host = 'redis-12870.c302.asia-northeast1-1.gce.redns.redis-cloud.com'
+    port = 12870
+    pwd = 'gqdTByOKjOlWIjAKyI18WyuZOUQYbifx'

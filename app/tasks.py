@@ -1,6 +1,5 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from .redis_client import redis_client
-from app import db
+from app import db, redis_client
 from app.models import Account, Order, Trade
 import threading
 
