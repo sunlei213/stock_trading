@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, redis_client
-from app.models import User,  Admin, Stock, Trade
+from app.models import User,  Admin, Stock, Trade, Sender
 from app.forms import LoginForm, OrderForm, QueryForm
+from datetime import datetime
+from app.logging_config import logger
 
 bp = Blueprint('main', __name__)
 
@@ -62,33 +64,39 @@ def trades():
 def place_order():
     global userid
     if request.method == 'POST':
-        stock_symbol = request.form['stock_symbol']
-        stock_name = request.form['stock_name']
-        order_type = request.form['order_type']
-        order_price = float(request.form['order_price'])
-        order_quantity = int(request.form['order_quantity'])
-        order_amount = float(request.form['order_amount'])
+        form = OrderForm(request.form)
+        if form.validate():
+            send = Sender()
+            form.populate_obj(send)
+            now = datetime.now()
+            send.meeting_day = now.strftime("%Y%m%d")
+            send.start_time = now.strftime("%H:%M:%S")
+            send.code = f"{send.code:0>6}"
+            send.user_id = int(userid)
+            tmp_code = f"{send.code}.{send.shorsz}"
+            tmp_price = float(send.price)
+            logger.info(f"{tmp_code} {tmp_price} {send.volume} {send.type} {userid}")
+            db.session.add(send)
+            db.session.commit()
+            message_data = {
+                'code': tmp_code,
+                'amt': send.volume, 
+                'type': send.type, 
+                'price': tmp_price, 
+                'stg': str(userid)      
+            }
+            redis_client.send_command("test", message_data)
+            flash('委托提交成功', 'success')
+        else:
+            logger.error(f"错误信息:{form.errors}")
 
         # 创建委托记录
-        order = Trade(
-            user_id=userid,
-            stock_symbol=stock_symbol,
-            stock_name=stock_name,
-            order_type=order_type,
-            order_price=order_price,
-            order_quantity=order_quantity,
-            order_amount=order_amount,
-            status='待成交'
-        )
-        db.session.add(order)
-        db.session.commit()
-
-        flash('委托提交成功', 'success')
         return redirect(url_for('main.place_order'))
 
     # 获取用户最近的委托记录
     userid = int(request.args.get('userid','536'))
     form = QueryForm()
+    form1 = OrderForm()
     account = User.query.filter_by(id=userid).first()
     recent_orders = Trade.query.filter_by(user_id=userid).order_by(Trade.start_time.desc()).limit(10).all()
-    return render_template('place_order.html', recent_orders=recent_orders, account=account, form=form)
+    return render_template('place_order.html', recent_orders=recent_orders, account=account, form=form, form1=form1, link=url_for('main.place_order'))

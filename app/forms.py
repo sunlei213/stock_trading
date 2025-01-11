@@ -12,14 +12,6 @@ class OrderForm(FlaskForm):
     code = IntegerField(u'代码：', validators=[DataRequired()])
     price = DecimalField(u'价格：', validators=[DataRequired()])
     volume = IntegerField(u'数量：', validators=[DataRequired()])
-    userid = RadioField(
-        '账户：',
-        validators=[DataRequired()],
-        choices=[
-            ('537', '主账户'),
-            ('536', '备账户')
-        ]
-    )
     shorsz = RadioField(
         '市场：',
         validators=[DataRequired()],

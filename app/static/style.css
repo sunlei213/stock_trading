@@ -96,17 +96,18 @@ form {
 .table {
     width: 100%;
     border-collapse: collapse;
+    color: #ccc;
     margin-top: 20px;
 }
 
 .table th, .table td {
     padding: 12px;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(124, 128, 129, 0.2);
     text-align: left;
 }
 
 .table th {
-    background-color: #007bff;
+    background-color: #7c8081;
     color: white;
 }
 
