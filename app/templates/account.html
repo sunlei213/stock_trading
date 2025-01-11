@@ -3,6 +3,28 @@
 {% block content %}
 <div class="container">
     <h2 class="mb-4">账户资金</h2>
+    <!-- 账户选择 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            选择账户
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{link}}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">选择账户：</label>
+                        {% for radio in form.userid %}
+                            {{ radio(class="form-check-input", id=radio.id) }} {{ radio.label(class="form-check-label") }}
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" class="btn btn-primary">提交</button>
+                        <button type="reset" class="btn btn-secondary">重置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- 账户资金信息 -->
     <div class="card mb-4">
@@ -10,48 +32,67 @@
             账户信息
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
+            <div class="row g-3">
+                <div class="col-md-3">
                     <label class="form-label">账户名称：</label>
-                    <p class="form-control-static">{{ account.account_name }}</p>
+                    <p class="form-control-static">{{ account.username }}</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">账户余额（元）：</label>
                     <p class="form-control-static">{{ account.balance }}</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">持仓市值（元）：</label>
-                    <p class="form-control-static">{{ account.market_value }}</p>
+                    <p class="form-control-static">{{ account.stocksvalue }}</p>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">总资产（元）：</label>
+                    <p class="form-control-static">{{ account.totlemoney }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 资金操作 -->
-    <div class="card mb-4">
+    <!-- 股份记录表格 -->
+    <div class="card">
         <div class="card-header bg-primary text-white">
-            资金操作
+            持股记录
         </div>
         <div class="card-body">
-            <form>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="depositAmount" class="form-label">存入金额（元）：</label>
-                        <input type="number" class="form-control" id="depositAmount">
-                    </div>
-                    <div class="col-md-6">
-                        <label for="withdrawAmount" class="form-label">取出金额（元）：</label>
-                        <input type="number" class="form-control" id="withdrawAmount">
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-12 text-end">
-                        <button type="submit" class="btn btn-primary">确认存入</button>
-                        <button type="submit" class="btn btn-secondary">确认取出</button>
-                    </div>
-                </div>
-            </form>
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>证券代码</th>
+                        <th>证券名称</th>
+                        <th>参考持股</th>
+                        <th>可用股份</th>
+                        <th>成本价（元）</th>
+                        <th>当前价（元）</th>
+                        <th>浮动盈亏</th>
+                        <th>盈亏比例(%)</th>
+                        <th>冻结数量</th>
+                        <th>在途股份</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.stock_code }}</td>
+                        <td>{{ stock.stock_name }}</td>
+                        <td>{{ stock.quantity }}</td>
+                        <td>{{ stock.usedstock }}</td>
+                        <td>{{ stock.price }}</td>
+                        <td>{{ stock.now_price }}</td>
+                        <td>{{ stock.loss }}</td>
+                        <td>{{ stock.loss_per }}</td>
+                        <td>{{ stock.lock_quantity }}</td>
+                        <td>{{ stock.buy_quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+
 </div>
 {% endblock %}

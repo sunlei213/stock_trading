@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from .redis_client import RedisClient
@@ -22,6 +22,7 @@ def create_app():
     login_manager.login_view = 'main.login'  # 指定未登录时重定向的视图函数
     login_manager.login_message = '请先登录!'
     login_manager.login_message_category = 'warning'
+
 
     from app import routes
     app.register_blueprint(routes.bp)

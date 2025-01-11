@@ -26,6 +26,10 @@ nav a:hover {
     text-decoration: underline;
 }
 
+.bg-primary {
+    background-color: #6c757d !important;
+}
+
 /* 内容区域样式 */
 .content {
     padding: 20px;
@@ -76,7 +80,7 @@ form {
 }
 
 .btn-primary:hover {
-    background-color: #0056b3;
+    background-color: #007bff;
 }
 
 .btn-secondary {

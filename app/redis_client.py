@@ -34,9 +34,9 @@ class RedisClient:
         try:
             conn = self.get_connection()
             conn.ping()  # 测试连接
-            print("Redis 连接成功！")
+            logger.info("Redis 连接成功！")
         except ConnectionError as e:
-            print(f"Redis 连接失败: {e}")
+            logger.error(f"Redis 连接失败: {e}")
             self._reconnect()
 
     def _reconnect(self):
@@ -49,11 +49,11 @@ class RedisClient:
         while retry_count < max_retries:
             try:
                 self._connect()  # 重新创建连接池
-                print("Redis 重连成功！")
+                logger.info("Redis 重连成功！")
                 return
             except ConnectionError as e:
                 retry_count += 1
-                print(f"重连失败 ({retry_count}/{max_retries}): {e}")
+                logger.error(f"重连失败 ({retry_count}/{max_retries}): {e}")
                 time.sleep(retry_delay)
 
         raise ConnectionError("无法重新连接到 Redis，请检查 Redis 服务状态。")

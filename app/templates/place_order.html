@@ -3,7 +3,54 @@
 {% block content %}
 <div class="container">
     <h2 class="mb-4">股票委托</h2>
-
+    <!-- 账户选择 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            选择账户
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{link}}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">选择账户：</label>
+                        {% for radio in form.userid %}
+                            {{ radio(class="form-check-input", id=radio.id) }} {{ radio.label(class="form-check-label") }}
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" class="btn btn-primary">提交</button>
+                        <button type="reset" class="btn btn-secondary">重置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- 账户资金信息 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            账户信息
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">账户名称：</label>
+                    <p class="form-control-static">{{ account.username }}</p>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">账户余额（元）：</label>
+                    <p class="form-control-static">{{ account.balance }}</p>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">持仓市值（元）：</label>
+                    <p class="form-control-static">{{ account.stocksvalue }}</p>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">总资产（元）：</label>
+                    <p class="form-control-static">{{ account.totlemoney }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- 委托表单 -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">

@@ -14,8 +14,8 @@ class User(db.Model):
 class Stock(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    stoc_name = db.Column(db.String(10), nullable=False)
     stock_code = db.Column(db.String(6), nullable=False)
+    stock_name = db.Column(db.String(10), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     usedstock = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
@@ -30,10 +30,17 @@ class Stock(db.Model):
 class Trade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    stock_symbol = db.Column(db.String(10), nullable=False)
+    send_day = db.Column(db.String(8), nullable=False)
+    start_time = db.Column(db.String(8), nullable=False)
+    stock_code = db.Column(db.String(6), nullable=False)
+    stock_name = db.Column(db.String(10), nullable=False)
+    type = db.Column(db.String(8), nullable=False)
+    price = db.Column(db.Float, nullable=False)   
+    volume = db.Column(db.Integer, nullable=False)
+    no = db.Column(db.Integer, nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+    price1 = db.Column(db.Float, nullable=False)
+    shorsz = db.Column(db.String(4))
 
 class Admin(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +61,7 @@ class Admin(UserMixin, db.Model):
 class Sender(db.Model):
     """A single meeting"""
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     meeting_day = db.Column(db.String(8))
     start_time = db.Column(db.String(8))
     code = db.Column(db.String(6))
@@ -61,16 +69,7 @@ class Sender(db.Model):
     price = db.Column(db.DECIMAL(10,3))
     volume = db.Column(db.Integer)
     type = db.Column(db.String(8))
-    stg = db.Column(db.String(6))
 
-class Reciver(db.Model):
-    """A single meeting"""
-    id = db.Column(db.Integer, primary_key=True)
-    meeting_day = db.Column(db.String(8))
-    start_time = db.Column(db.String(8))
-    stg = db.Column(db.String(6))
-    type = db.Column(db.String(8))
-    msg = db.Column(db.String(100))
 
 @login_manager.user_loader
 def load_user(user_id):
