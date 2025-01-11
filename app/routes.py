@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, redis_client
-from app.models import User, Account, Order, Trade
+from app.models import User,  Admin, Stock, Trade
 
 bp = Blueprint('main', __name__)
 
@@ -14,12 +14,13 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        if user and user.password == password:
+        user = Admin.query.filter_by(username=username).first()
+        if user and user.validate_password(password):
             login_user(user)
             return redirect(url_for('main.account'))
         else:
             flash('Invalid username or password')
+            return redirect(url_for('main.login'))
     return render_template('login.html')
 
 @bp.route('/logout')
@@ -31,13 +32,13 @@ def logout():
 @bp.route('/account')
 @login_required
 def account():
-    account = Account.query.filter_by(user_id=current_user.id).first()
+    account = User.query.filter_by(id=current_user.id).first()
     return render_template('account.html', account=account)
 
 @bp.route('/orders')
 @login_required
 def orders():
-    orders = Order.query.filter_by(user_id=current_user.id).all()
+    orders = Stock.query.filter_by(user_id=current_user.id).all()
     return render_template('orders.html', orders=orders)
 
 @bp.route('/trades')
@@ -58,7 +59,7 @@ def place_order():
         order_amount = float(request.form['order_amount'])
 
         # 创建委托记录
-        order = Order(
+        order = Trade(
             user_id=current_user.id,
             stock_symbol=stock_symbol,
             stock_name=stock_name,
@@ -75,5 +76,5 @@ def place_order():
         return redirect(url_for('main.place_order'))
 
     # 获取用户最近的委托记录
-    recent_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.order_time.desc()).limit(10).all()
+    recent_orders = Trade.query.filter_by(user_id=current_user.id).order_by(Trade.order_time.desc()).limit(10).all()
     return render_template('place_order.html', recent_orders=recent_orders)

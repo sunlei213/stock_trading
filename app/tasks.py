@@ -7,11 +7,11 @@ scheduler = BackgroundScheduler()
 
 def query_account_funds():
     """每 20 秒查询账户资金"""
-    redis_client.send_command('order', 'query_account_funds')
+    redis_client.send_command('test', 'query_account_funds')
 
 def query_orders_and_trades():
     """每 20 秒查询委托和成交"""
-    redis_client.send_command('order', 'query_orders_and_trades')
+    redis_client.send_command('test', 'query_orders_and_trades')
 
 def start_scheduler():
     """启动定时任务"""
@@ -24,7 +24,7 @@ def monitor_redis():
     last_id = '0'  # 从最新的消息开始读取
 
     while True:
-        messages = redis_client.read_messages('msg', last_id)
+        messages = redis_client.read_messages('test_msg', last_id)
         if messages:
             for stream, message_list in messages:
                 for message_id, message in message_list:
@@ -44,5 +44,5 @@ def monitor_redis():
                         db.session.commit()
 
 # 启动定时任务和监控线程
-start_scheduler()
-threading.Thread(target=monitor_redis, daemon=True).start()
+#start_scheduler()
+#threading.Thread(target=monitor_redis, daemon=True).start()

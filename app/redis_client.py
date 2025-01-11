@@ -1,6 +1,8 @@
 import redis
 import time
 from redis.exceptions import ConnectionError
+from app.logging_config import logger
+from config import redisConfig
 
 class RedisClient:
     def __init__(self, host='localhost', port=6379, db=0, password=None, max_connections=10):
@@ -10,6 +12,8 @@ class RedisClient:
         self.password = password
         self.max_connections = max_connections
         self.connection_pool = None
+        self.stream_name = "msg"
+        self.consumer_group = "msg_group"
         self._connect()
 
     def _connect(self):
@@ -54,6 +58,10 @@ class RedisClient:
 
         raise ConnectionError("无法重新连接到 Redis，请检查 Redis 服务状态。")
 
+    def set_stream_name(self, stream_name, consumer_group):
+        self.stream_name = stream_name
+        self.consumer_group = consumer_group
+
     def get_connection(self):
         """从连接池获取一个 Redis 连接"""
         if not self.connection_pool:
@@ -82,29 +90,29 @@ class RedisClient:
             messages = conn.xread({stream_name: last_id}, block=3000, count=count)
             return messages
 
-    def read_group_messages(self, consumer_group, consumer_name,stream_name, last_id='>', count=1):
+    def read_group_messages(self, consumer_name, last_id='>', count=1):
         """从 Redis Stream 读取消息"""
         try:
             conn = self.get_connection()
-            messages = conn.xreadgroup(consumer_group, consumer_name,{stream_name: last_id}, block=3000, count=count)
+            messages = conn.xreadgroup(self.consumer_group, consumer_name,{self.stream_name: last_id}, block=3000, count=count)
             return messages
         except ConnectionError:
             self._reconnect()
             conn = self.get_connection()
-            messages = conn.xreadgroup(consumer_group, consumer_name,{stream_name: last_id}, block=3000, count=count)
+            messages = conn.xreadgroup(self.consumer_group, consumer_name,{self.stream_name: last_id}, block=3000, count=count)
             return messages
         
-    def ack_message(self, stream_name, consumer_group, message_id):
+    def ack_message(self, message_id):
         """确认 Redis Stream 消息"""
         try:
             conn = self.get_connection()
-            conn.xack(stream_name, consumer_group, message_id)
-            conn.xdel(stream_name, message_id)
+            conn.xack(self.stream_name, self.consumer_group, message_id)
+            conn.xdel(self.stream_name, message_id)
         except ConnectionError:
             self._reconnect()
             conn = self.get_connection()
-            conn.xack(stream_name, consumer_group, message_id)
-            conn.xdel(stream_name, message_id)
+            conn.xack(self.stream_name, self.consumer_group, message_id)
+            conn.xdel(self.stream_name, message_id)
 
     def delete_stream_id(self, stream_name, message_id):
         """删除 Redis Stream 消息"""
@@ -125,6 +133,27 @@ class RedisClient:
             self._reconnect()
             conn = self.get_connection()
             conn.delete(stream_name)
+
+    def xgroup_create(self, ):
+        """
+        创建消费组
+        """
+        if self.check_consumer_group_exists():
+            logger.info('消费者组已存在')            
+        else:
+            my_rds = self.get_connection()
+            my_rds.xgroup_create(self.stream_name, self.consumer_group, id='0', mkstream=True)
+            logger.info('消费者组创建成功')
+
+    def check_consumer_group_exists(self):
+        # 获取指定Stream的消费者组列表
+        try:
+            my_rds = self.get_connection()
+            groups = my_rds.xinfo_groups(self.stream_name)
+            return any(group['name'] == self.consumer_group for group in groups)
+        except Exception as e:
+            logger.error(f"检查消费者组时出错: {e}")
+            return False
 
 # 全局 Redis 客户端实例
 #redis_client = RedisClient(host='localhost', port=6379, db=0)

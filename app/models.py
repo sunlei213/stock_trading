@@ -5,20 +5,27 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
-
-class Account(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     balance = db.Column(db.Float, default=0.0)
+    usedmoney = db.Column(db.Float, default=0.0)
+    getmoney = db.Column(db.Float, default=0.0)
+    stocksvalue = db.Column(db.Float, default=0.0)
+    totlemoney = db.Column(db.Float, default=0.0)
 
-class Order(db.Model):
+class Stock(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    stock_symbol = db.Column(db.String(10), nullable=False)
+    stoc_name = db.Column(db.String(10), nullable=False)
+    stock_code = db.Column(db.String(6), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    usedstock = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String(20), default='pending')
+    now_price = db.Column(db.Float, nullable=False)
+    loss = db.Column(db.Float, nullable=False)
+    loss_per = db.Column(db.Float, nullable=False)
+    lock_quantity = db.Column(db.Integer, nullable=False)
+    buy_quantity = db.Column(db.Integer, nullable=False)
+    sell_quantity = db.Column(db.Integer, nullable=False)
+
 
 class Trade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -67,4 +74,4 @@ class Reciver(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return Admin.query.get(int(user_id))

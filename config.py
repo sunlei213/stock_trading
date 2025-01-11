@@ -11,3 +11,5 @@ class redisConfig:
     host = 'redis-12870.c302.asia-northeast1-1.gce.redns.redis-cloud.com'
     port = 12870
     pwd = 'gqdTByOKjOlWIjAKyI18WyuZOUQYbifx'
+    stream_name = "test_msg"
+    consumer_group = "test_msg_group"
