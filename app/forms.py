@@ -1,15 +1,16 @@
 from flask_wtf import FlaskForm 
 from wtforms.fields import StringField, SubmitField, SelectField, RadioField, DecimalField, IntegerField, PasswordField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired
 
 
 class LoginForm(FlaskForm):
-    username = StringField('用户名', validators=[DataRequired(), Length(1, 20)])
-    password = PasswordField('密码', validators=[DataRequired(), Length(1, 128)])
+    username = StringField('用户名', validators=[DataRequired()])
+    password = PasswordField('密码', validators=[DataRequired()])
     submit = SubmitField('登录')
 
 class OrderForm(FlaskForm):
-    code = IntegerField(u'代码：', validators=[DataRequired()])
+    code = StringField(u'代码：', validators=[DataRequired()])
+    code_select = SelectField(u'代码：', choices=[])
     price = DecimalField(u'价格：', validators=[DataRequired()])
     volume = IntegerField(u'数量：', validators=[DataRequired()])
     shorsz = RadioField(
@@ -42,3 +43,6 @@ class QueryForm(FlaskForm):
     )
     # submit button will read "share my lunch!"
     submit = SubmitField(u'提交查询')
+
+class TaskForm(FlaskForm):
+    submit = SubmitField('提交')

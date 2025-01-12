@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">定时任务管理</h2>
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            任务控制
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>当前状态：</h5>
+                    <p>任务运行状态: <span id="status" class="badge {% if is_running %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if is_running %}运行中{% else %}已停止{% endif %}
+                    </span></p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <form method="POST">
+                        {{ form.csrf_token }}
+                        {% if not is_running %}
+                            <button type="submit" name="action" value="start" class="btn btn-success">启动任务</button>
+                        {% else %}
+                            <button type="submit" name="action" value="stop" class="btn btn-danger">停止任务</button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

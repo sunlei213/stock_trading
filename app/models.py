@@ -70,6 +70,14 @@ class Sender(db.Model):
     volume = db.Column(db.Integer)
     type = db.Column(db.String(8))
 
+class Reciver(db.Model):
+    """A single meeting"""
+    id = db.Column(db.Integer, primary_key=True)
+    meeting_day = db.Column(db.String(8))
+    start_time = db.Column(db.String(8))
+    stg = db.Column(db.String(6))
+    type = db.Column(db.String(8))
+    msg = db.Column(db.String(100))
 
 @login_manager.user_loader
 def load_user(user_id):

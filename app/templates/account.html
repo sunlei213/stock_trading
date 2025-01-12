@@ -9,7 +9,8 @@
             选择账户
         </div>
         <div class="card-body">
-            <form method="GET" action="{{link}}">
+            <form method="POST" action="{{link}}">
+                {{ form.csrf_token }}
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">选择账户：</label>
