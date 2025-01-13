@@ -1,9 +1,10 @@
+from time import sleep
 from apscheduler.schedulers.background import BackgroundScheduler
 from app import db, redis_client
 from app.models import User, Stock, Trade, Reciver
 from app.logging_config import logger
 from datetime import datetime
-import threading
+
 import re
 
 scheduler = BackgroundScheduler()
@@ -71,11 +72,17 @@ message_type = MessageType()
 
 def query_account_funds():
     """每 20 秒查询账户资金"""
-    redis_client.send_command('test', 'query_account_funds')
+    for stg in ["536", "537"]:
+        for msg_type in ['BALANCE', 'POSITION']:
+            redis_client.send_command({'type': msg_type, 'stg': stg})
+            sleep(1)
 
 def query_orders_and_trades():
     """每 20 秒查询委托和成交"""
-    redis_client.send_command('test', 'query_orders_and_trades')
+    for stg in ["536", "537"]:
+        redis_client.send_command({'type': 'TRADE', 'stg': stg})
+        sleep(1)
+
 
 def start_scheduler():
     """启动定时任务"""
@@ -134,7 +141,7 @@ def monitor_redis():
                 message = _process_message(data)
                 if message:
                     _save_to_db(data, message)
-                    redis_client.xack_message(last_id)
+                    redis_client.ack_message(last_id)
 
 
 def stop_scheduler():

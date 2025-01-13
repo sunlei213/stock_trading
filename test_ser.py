@@ -5,13 +5,28 @@ from threading import Thread
 #import mail
 import signal
 import time
+from config import Config, redisConfig
 #import easytrader
 
 class miniqmt(object):
-    traders = {}
-    keys = []
     def __init__(self):
-        pass
+        self.process = {}
+        self.process['CANCEL'] = self.cancel_all
+        self.process['BUY'] = self.buy
+        self.process['SELL'] = self.sell
+        self.process['BUY_MKT'] = self.buy_mkt
+        self.process['SELL_MKT'] = self.sell_mkt
+        self.process['TRADE'] = self._process_trade
+        self.process['POSITION'] = self.position
+        self.process['BALANCE'] = self.balance
+        self.traders = {}
+        self.keys = []
+        self.code = ''
+        self.amount = 0
+        self.price = 0
+        self.stg = ''
+        self.ttype = ''
+
 
     def CustomTrade(self, path, acc):
         if len(path) != len(acc):
@@ -65,27 +80,24 @@ class miniqmt(object):
         return {'资金余额': 126582.21, '可用金额': 126482.21, '可取金额': 126482.21, '股票市值': 319171.85, '总资产': 465444.95} if stg == '537' else {'资金余额': 140.63, '可用金额': 140.63, '可取金额': 140.63, '股票市值': 71912.5, '总资产': 72053.13}   
 
 class RedisService(object):
-    host = 'redis-12870.c302.asia-northeast1-1.gce.redns.redis-cloud.com'
+
     #host='127.0.0.1'
-    port = 12870
-    pwd = 'gqdTByOKjOlWIjAKyI18WyuZOUQYbifx'
-    stream_name = "test"
-    msg_name = "test_msg"
-    consumer_group = "test_group"
-    consumer_name = 'single1'
-    path = [r'C:\Users\sunlei\Documents\stock\536.json', r'C:\Users\sunlei\Documents\stock\537.json']
-    acc = ['536', '537']
-    receivers = ['xxx@qq.com']
-    CQMT = miniqmt()
-    is_test = False
+
 
     def __init__(self):
         self.redis = redis.Redis(
-            host=RedisService.host,
-            port=RedisService.port,
-            password=RedisService.pwd)
-        self.stream_name = RedisService.stream_name
-        self.consumer_group = RedisService.consumer_group
+            host = redisConfig.host,
+            port = redisConfig.port,
+            pwd = redisConfig.pwd)
+        self.stream_name = redisConfig.order_stream_name
+        self.msg_name = redisConfig.msg_stream_name
+        self.consumer_group = redisConfig.order_consumer_group
+        self.consumer_name = redisConfig.order_consumer_name
+        self.path = [r'C:\Users\sunlei\Documents\stock\536.json', r'C:\Users\sunlei\Documents\stock\537.json']
+        self.acc = ['536', '537']
+        self.receivers = ['xxx@qq.com']
+        self.CQMT = miniqmt()
+        self.is_test = False
         self.stk_code_pattern = re.compile(r'(\d{6}).([A-Z]{4})')   #(r'(\d{6}).*')
         #self.CQMT.CustomTrade(RedisService.path, RedisService.acc)
         self.thread = Thread(target=self.loop_consuming, daemon=True)
@@ -184,8 +196,11 @@ class RedisService(object):
                 return True
             code = match_res.group(1)
             mkt = match_res.group(2)
-            code = ('sh' + code) if mkt == 'XSHG' else ('sz' + code)
-            amt = int(data['amt'])
+            self.CQMT.code = ('sh' + code) if mkt == 'XSHG' else ('sz' + code)
+            self.CQMT.amount = int(data['amt'])
+            self.CQMT.price = float(data['price'])
+            self.CQMT.ttype = data.get('ttype', '')
+            self.CQMT.stg = data.get('stg', '')
             #remark = data.get('remark', '')
             stg = data.get('stg', '')
             rec_no = 1 

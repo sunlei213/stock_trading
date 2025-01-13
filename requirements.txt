@@ -4,3 +4,8 @@ redis
 APScheduler
 SQLAlchemy
 flask_sqlalchemy
+flask_wtf
+wtforms
+pandas
+numpy
+matplotlib

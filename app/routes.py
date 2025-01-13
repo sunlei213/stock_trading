@@ -99,13 +99,14 @@ def place_order():
                 db.session.add(send)
                 db.session.commit()
                 message_data = {
+                    'stg': str(g_state.userid),     
+                    'type': send.type, 
                     'code': tmp_code,
                     'amt': send.volume, 
-                    'type': send.type, 
                     'price': tmp_price, 
-                    'stg': str(g_state.userid)      
+                    'ttype' : "" 
                 }
-                redis_client.send_command("test", message_data)
+                redis_client.send_command(message_data)
                 flash('委托提交成功', 'success')
             else:
                 logger.error(f"错误信息:{form.errors}")

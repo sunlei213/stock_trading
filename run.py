@@ -1,9 +1,23 @@
 from app import create_app, db, redis_client
 from app.models import  Admin
 from app.logging_config import logger
+from app.tasks import monitor_redis
 import sys
+import threading
+from time import sleep
 
 app = create_app()
+
+def start_monitor_redis():
+    t = threading.Thread(target=monitor_redis, daemon=True)
+    t.start()
+    logger.info("启动redis监控线程")
+    while True:
+        sleep(30)
+        if not t.is_alive():
+            logger.error("redis监控线程异常退出")
+            t = threading.Thread(target=monitor_redis, daemon=True)
+            t.start()
 
 if __name__ == '__main__':
     av1 = len(sys.argv) > 1
@@ -21,4 +35,5 @@ if __name__ == '__main__':
 
     else:
         logger.info("启动后台服务")
+        threading.Thread(target=start_monitor_redis, daemon=True).start()
         app.run(host='0.0.0.0',port=8001)

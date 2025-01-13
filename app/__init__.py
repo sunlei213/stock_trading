@@ -11,7 +11,7 @@ login_manager = LoginManager()
 
 # 全局 Redis 客户端实例
 redis_client = RedisClient(host=redisConfig.host, port=redisConfig.port, db=0, password=redisConfig.pwd, max_connections=20)
-redis_client.set_stream_name(redisConfig.stream_name, redisConfig.consumer_group)
+redis_client.set_stream_name(redisConfig.msg_stream_name, redisConfig.msg_consumer_group, redisConfig.msg_consumer_name, redisConfig.order_stream_name)
 
 def create_app():
     app = Flask(__name__)

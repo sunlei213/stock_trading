@@ -2,7 +2,6 @@ import redis
 import time
 from redis.exceptions import ConnectionError
 from app.logging_config import logger
-from config import redisConfig
 
 class RedisClient:
     def __init__(self, host='localhost', port=6379, db=0, password=None, max_connections=10):
@@ -14,6 +13,8 @@ class RedisClient:
         self.connection_pool = None
         self.stream_name = "msg"
         self.consumer_group = "msg_group"
+        self.consumer_name = None
+        self.order_stream_name = None
         self._connect()
 
     def _connect(self):
@@ -58,9 +59,11 @@ class RedisClient:
 
         raise ConnectionError("无法重新连接到 Redis，请检查 Redis 服务状态。")
 
-    def set_stream_name(self, stream_name, consumer_group):
+    def set_stream_name(self, stream_name, consumer_group, consumer_name, order_stream_name):
         self.stream_name = stream_name
         self.consumer_group = consumer_group
+        self.consumer_name = consumer_name
+        self.order_stream_name = order_stream_name
 
     def get_connection(self):
         """从连接池获取一个 Redis 连接"""
@@ -68,15 +71,19 @@ class RedisClient:
             self._connect()
         return redis.Redis(connection_pool=self.connection_pool)
 
-    def send_command(self, stream_name, command):
+    def send_command(self, command=None, stream_name=None):
         """发送指令到 Redis Stream"""
-        try:
-            conn = self.get_connection()
-            conn.xadd(stream_name, command)
-        except ConnectionError:
-            self._reconnect()
-            conn = self.get_connection()
-            conn.xadd(stream_name, command)
+        order_stream = stream_name
+        if command:
+            if not order_stream:
+                order_stream = self.order_stream_name
+            try:
+                conn = self.get_connection()
+                conn.xadd(order_stream, command)
+            except ConnectionError:
+                self._reconnect()
+                conn = self.get_connection()
+                conn.xadd(order_stream, command)
 
     def read_messages(self, stream_name, last_id='0', count=1):
         """从 Redis Stream 读取消息"""
@@ -90,16 +97,16 @@ class RedisClient:
             messages = conn.xread({stream_name: last_id}, block=3000, count=count)
             return messages
 
-    def read_group_messages(self, consumer_name, last_id='>', count=1):
+    def read_group_messages(self, last_id='>', count=1):
         """从 Redis Stream 读取消息"""
         try:
             conn = self.get_connection()
-            messages = conn.xreadgroup(self.consumer_group, consumer_name,{self.stream_name: last_id}, block=3000, count=count)
+            messages = conn.xreadgroup(self.consumer_group, self.consumer_name,{self.stream_name: last_id}, block=3000, count=count)
             return messages
         except ConnectionError:
             self._reconnect()
             conn = self.get_connection()
-            messages = conn.xreadgroup(self.consumer_group, consumer_name,{self.stream_name: last_id}, block=3000, count=count)
+            messages = conn.xreadgroup(self.consumer_group, self.consumer_name,{self.stream_name: last_id}, block=3000, count=count)
             return messages
         
     def ack_message(self, message_id):

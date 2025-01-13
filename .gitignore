@@ -3,3 +3,6 @@ __pycache__
 app.log
 instance/test.db
 
+.devcontainer/devcontainer.json
+.devcontainer/devcontainer.json
+.github/dependabot.yml
