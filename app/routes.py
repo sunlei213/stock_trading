@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, g
+from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required
-from app import db, redis_client
+from app import db, get_redis_client
 from app.models import User,  Admin, Stock, Trade, Sender
 from app.forms import LoginForm, OrderForm, QueryForm, TaskForm
 from datetime import datetime
@@ -72,6 +72,7 @@ def trades():
 @bp.route('/place_order', methods=['GET', 'POST'])
 @login_required
 def place_order():
+    redis_client = get_redis_client()
     if request.method == 'POST':
         form_id = request.form.get('form_id')
         logger.info(f"form_id: {form_id}")
@@ -140,7 +141,10 @@ def place_order():
 @login_required
 def tasks():
     form = TaskForm()
-    is_running = scheduler.running
+    is_running = False
+    if scheduler:
+        logger.info("调度器已经运行")
+        is_running = True
 
     if request.method == 'POST':
         action = request.form.get('action')

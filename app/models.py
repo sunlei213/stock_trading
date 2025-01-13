@@ -35,12 +35,15 @@ class Trade(db.Model):
     stock_code = db.Column(db.String(6), nullable=False)
     stock_name = db.Column(db.String(10), nullable=False)
     type = db.Column(db.String(8), nullable=False)
-    price = db.Column(db.Float, nullable=False)   
-    volume = db.Column(db.Integer, nullable=False)
-    no = db.Column(db.Integer, nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
-    price1 = db.Column(db.Float, nullable=False)
-    shorsz = db.Column(db.String(4))
+    price = db.Column(db.Float, nullable=False)   # 委托价格
+    volume = db.Column(db.Integer, nullable=False)  # 委托数量
+    no = db.Column(db.Integer, nullable=False)  # 委托编号
+    price1 = db.Column(db.Float, nullable=False)  # 成交价格
+    volume1 = db.Column(db.Integer, nullable=False)  # 成交数量
+    return_vol = db.Column(db.Integer, nullable=False)  # 撤单数量
+    status = db.Column(db.String(8), nullable=False)  # 委托状态
+    msg = db.Column(db.String(100))  # 返回信息
+    shorsz = db.Column(db.String(4))  # 交易市场
 
 class Admin(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,7 +52,7 @@ class Admin(UserMixin, db.Model):
 
     @property
     def password(self):
-        raise AttributeError(f'password是只读属性')
+        raise AttributeError('password是只读属性')
 
     @password.setter
     def password(self, password):

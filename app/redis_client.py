@@ -141,7 +141,7 @@ class RedisClient:
             conn = self.get_connection()
             conn.delete(stream_name)
 
-    def xgroup_create(self, ):
+    def xgroup_create(self):
         """
         创建消费组
         """
@@ -156,6 +156,7 @@ class RedisClient:
         # 获取指定Stream的消费者组列表
         try:
             my_rds = self.get_connection()
+            logger.info(f"检查消费者组: {self.stream_name}, {self.consumer_group}")
             groups = my_rds.xinfo_groups(self.stream_name)
             return any(group['name'] == self.consumer_group for group in groups)
         except Exception as e:
