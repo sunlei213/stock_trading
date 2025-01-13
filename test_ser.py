@@ -52,7 +52,6 @@ class miniqmt(object):
         pass
     
     def trade(self):
-        print(f'{self.stg},获取委托')
         return [{'委托时间': '09:51:27', '申报编号': 7097, '证券代码': '="600030"', '证券名称': '中信证券', 
                  '买卖': '证券买入', '委托类型': '买卖', '委托状态': '废单', '委托价格': 1.26, '委托数量': 500.0, 
                  '成交 价格': 0.0, '成交数量': 0.0, '已撤数量': 0, '股东代码': '="A298058695"', 
@@ -70,7 +69,6 @@ class miniqmt(object):
         return '撤销成功'
         
     def position(self):
-        print(f'{self.stg},获取持仓')
         if self.stg == '536':
             return [{'证券名称': '上证50ETF', '证券代码': '="510050"', '参考持股': 30000, 
                     '可用股份': 30000.0, '成本价': 2.726, '当前价': 2.615, '当前成本': 81792.27, 
@@ -96,7 +94,6 @@ class miniqmt(object):
                     ]
 
     def balance(self):
-        print(f'{self.stg},获取资产')
         return {'资金余额': 126582.21, '可用金额': 126482.21, '可取金额': 126482.21, '股票市值': 319171.85, '总资产': 465444.95} if self.stg == '537' else {'资金余额': 140.63, '可用金额': 140.63, '可取金额': 140.63, '股票市值': 71912.5, '总资产': 72053.13}   
 
 class RedisService(object):
@@ -227,7 +224,6 @@ class RedisService(object):
                 return True
             if data['type'] in self.CQMT.process:
                 func = self.CQMT.process[data['type']]
-                print(type(func))
                 tmp = func()
             else:
                 rec_no = 0
@@ -257,7 +253,6 @@ class RedisService(object):
                 tmp = f'{data["type"]}_{mkt}， {code}, 价格： { data["price"] if data["price"] != "0" else "市价"}, 股数： {amt} '
             #mail.send_mail_async("order new notice", f"{data['type']} {code}, price is { data['price'] if data['price'] != '0' else 'market'}, amt {amt} ", RedisService.receivers)
             """
-            print(rec_no)
             msg_data = {
                 'stg': data.get('stg', ''),
                 'ret': rec_no,

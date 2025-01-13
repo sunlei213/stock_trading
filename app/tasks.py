@@ -18,6 +18,11 @@ def init_scheduler():
         scheduler.add_job(query_account_funds, 'interval', seconds=20)
         scheduler.add_job(query_orders_and_trades, 'interval', seconds=20)
 
+def get_scheduler():
+    """获取调度器实例"""
+    global scheduler
+    return scheduler
+
 def start_scheduler():
     """启动定时任务"""
     global scheduler
@@ -51,13 +56,9 @@ class MessageType:
         return f"委托， 委托号：{data.get('entrust_no', '0')},委托状态：{data.get('message', '正常')}"
     
     def _process_trade(self, user_id, msg):
-        data = msg.replace('"','').replace('=','')
-        try:
-            data = eval(data)
-        except(SyntaxError, ValueError, NameError) as e:
-            return f"委托查询失败：{data}，错误：{str(e)}"
+
         today = datetime.now().strftime("%Y%m%d")
-        for trade in data:
+        for trade in msg:
             match_res = self.stk_code_pattern.search(trade.get('证券代码'))
             if not match_res:
                 continue
@@ -82,12 +83,8 @@ class MessageType:
         return "委托查询"
 
     def _process_position(self, user_id, msg):
-        data = msg.replace('"','').replace('=','')
-        try:
-            data = eval(data)
-        except(SyntaxError, ValueError, NameError) as e:
-            return f"持仓查询失败：{data}，错误：{str(e)}"
-        for stock in data:
+
+        for stock in msg:
             match_res = self.stk_code_pattern.search(stock.get('证券代码'))
             if not match_res:
                 continue
@@ -100,7 +97,7 @@ class MessageType:
             record.quantity = int(stock.get('参考持股', '0'))
             record.usedstock = int(stock.get('可用股份', '0'))
             record.price = float(stock.get('成本价', '0.00'))
-            record.now_price = float(stock.get('最新价', '0.00'))
+            record.now_price = float(stock.get('当前价', '0.00'))
             record.loss = float(stock.get('浮动盈亏', '0.00'))
             record.loss_per = float(stock.get('盈亏比例(%)', '0.00'))
             record.lock_quantity = int(stock.get('冻结股份', '0'))
@@ -112,7 +109,7 @@ class MessageType:
     def _process_balance(self, user_id, data):
         record = User.query.filter_by(id=user_id).first()
         if not record:
-            record = User(id=user_id)
+            record = User(id=user_id, username=('孙克昆' if user_id == '536' else '谢爱琴'), balance=0.00, usedmoney=0.00, getmoney=0.00, stocksvalue=0.00, totlemoney=0.00)
             db.session.add(record)
             db.session.commit()
         record.username = '孙克昆' if user_id == '536' else '谢爱琴'
@@ -151,7 +148,7 @@ def _process_message(data):
         msg = eval(data['msg']) if 'msg' in data else {}
     except (SyntaxError, ValueError, NameError):
         msg = data['msg'] if 'msg' in data else {}
-    if ret == 1:
+    if ret == '1':
         if msg_type == 'BUY' or msg_type == 'SELL':
             msg_type = 'ORDER'
         if msg_type in message_type.process:

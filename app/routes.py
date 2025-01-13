@@ -5,7 +5,7 @@ from app.models import User,  Admin, Stock, Trade, Sender
 from app.forms import LoginForm, OrderForm, QueryForm, TaskForm
 from datetime import datetime
 from app.logging_config import logger
-from app.tasks import scheduler, start_scheduler, stop_scheduler
+from app.tasks import get_scheduler, start_scheduler, stop_scheduler
 
 bp = Blueprint('main', __name__)
 
@@ -75,7 +75,6 @@ def place_order():
     redis_client = get_redis_client()
     if request.method == 'POST':
         form_id = request.form.get('form_id')
-        logger.info(f"form_id: {form_id}")
         if form_id == 'form1':
             form = QueryForm(request.form)
             if form.validate():
@@ -141,6 +140,7 @@ def place_order():
 @login_required
 def tasks():
     form = TaskForm()
+    scheduler = get_scheduler()
     is_running = False
     if scheduler:
         logger.info("调度器已经运行")
