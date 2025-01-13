@@ -27,7 +27,12 @@ class MessageType:
     def _process_trade(self, user_id, data):
         return f"成交， 委托号：{data.get('entrust_no', '0')}, 委托状态：{data.get('message', '正常')}"
 
-    def _process_position(self, user_id, data):
+    def _process_position(self, user_id, msg):
+        data = msg.replace('"','').replace('=','')
+        try:
+            data = eval(data)
+        except:
+            return f"持仓查询失败：{data}"
         for stock in data:
             match_res = self.stk_code_pattern.search(stock.get('证券代码'))
             if not match_res:
