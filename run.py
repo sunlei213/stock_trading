@@ -4,7 +4,7 @@ from time import sleep
 from app import create_app, db, get_redis_client
 from app.models import Admin
 from app.logging_config import logger
-from app.tasks import monitor_redis
+from app.tasks import monitor_redis, get_msg_queue
 #`import atexit
 
 app = create_app()
@@ -17,12 +17,15 @@ def start_monitor_redis():
     t = threading.Thread(target=run_monitor, daemon=True)
     t.start()
     logger.info("启动redis监控线程")
+    once = get_msg_queue()
+    once.start()
     while True:
         sleep(30)
         if not t.is_alive():
             logger.error("redis监控线程异常退出")
             t = threading.Thread(target=run_monitor, daemon=True)
             t.start()
+        once.check_main_thread()
 
 def initialize_db():
     with app.app_context():

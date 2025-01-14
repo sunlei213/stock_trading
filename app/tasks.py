@@ -1,5 +1,5 @@
 import threading
-import queue
+from queue import Full, SimpleQueue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -129,10 +129,10 @@ message_type = MessageType()
 
 class msg_queue:
     def __init__(self):
-        self.queue = queue.Queue()
+        self.queue = SimpleQueue()
         self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
         self.threadpool = ThreadPoolExecutor(max_workers=10)
-        self.main_thread.start()
+        # self.main_thread.start()
 
     def start(self):
         self.main_thread.start()
@@ -141,22 +141,44 @@ class msg_queue:
         """查询账户资金"""
         for _ in range(3):
             for msg_type in ['BALANCE', 'POSITION','TRADE']:
-                self.queue.put({'type': msg_type,'stg': user_id})
+                try:
+                    self.queue.put_nowait({'type': msg_type,'stg': user_id})
+                except Full:
+                    logger.error("消息队列已满")
                 sleep(1)
             sleep(20)
 
+    def check_main_thread(self):
+        """检查主线程是否存活"""
+        if not self.main_thread.is_alive():
+            self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
+            self.main_thread.start()
+
     def start_query(self, user_id):
         """开始查询"""
+        logger.info(f"开始查询线程")
+        try:
+            self.queue.put_nowait({'type': 'aaa', 'user_id': user_id})
+        except Full:
+            logger.error("消息队列已满")
+        """
         if not self.main_thread.is_alive():
             self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
             self.main_thread.start()
         self.threadpool.submit(self.query_account_funds, user_id)
+        """
 
     def send_msg(self, data):
-        self.queue.put(data)
+        logger.info(f"发送消息：{data}")
+        try:
+            self.queue.put_nowait(data)
+        except Full:
+            logger.error("消息队列已满")
+        """
         if not self.main_thread.is_alive():
             self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
             self.main_thread.start()
+        """
 
     def get_msg(self):
         """获取消息并处理"""
@@ -167,6 +189,10 @@ class msg_queue:
                 if is_send:
                     data = self.queue.get()
                 if data:
+                    if data.get('type') == 'aaa':
+                        logger.info(f"开始查询线程")
+                        self.threadpool.submit(self.query_account_funds, data.get('user_id'))
+                        continue
                     try:
                         redis_client = get_redis_client()
                         if not redis_client:

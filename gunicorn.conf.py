@@ -2,7 +2,7 @@ import threading
 from time import sleep
 from app import create_app
 from app.logging_config import logger
-from app.tasks import monitor_redis
+from app.tasks import monitor_redis, get_msg_queue
 
 app = create_app()
 
@@ -14,6 +14,7 @@ def start_monitor_redis():
     t = threading.Thread(target=run_monitor, daemon=True)
     t.start()
     logger.info("启动redis监控线程")
+
     while True:
         sleep(30)
         if not t.is_alive():
@@ -21,6 +22,19 @@ def start_monitor_redis():
             t = threading.Thread(target=run_monitor, daemon=True)
             t.start()
 
+
+def child_msg_queue():
+    run_once = get_msg_queue()
+    run_once.start()
+    while True:
+        sleep(30)
+        run_once.check_main_thread()
+
+def when_ready(server):
+    logger.info("启动后台服务")
+    threading.Thread(target=start_monitor_redis, daemon=True).start()
+
 def post_fork(server, worker):
-    if worker.is_main:
-        start_monitor_redis()
+    logger.info("启动子进程")
+    threading.Thread(target=child_msg_queue, daemon=True).start()
+
