@@ -17,6 +17,7 @@ class miniqmt(object):
         self.process['TRADE'] = self.trade
         self.process['POSITION'] = self.position
         self.process['BALANCE'] = self.balance
+        self.stk_code_pattern = re.compile(r'(\d{6}).([A-Z]{4})')   #(r'(\d{6}).*')
         self.traders = {}
         self.keys = []
         self.code = ''
@@ -36,6 +37,21 @@ class miniqmt(object):
             self.traders[x].prepare(y)"""
 
         return True
+    
+    def set_data(self,data):
+        code = data.get('code', '600000.XSHG')
+        match_res = self.stk_code_pattern.search(code)
+        if not match_res:
+            print("illegal param code %s" % code)
+            return False
+        code = match_res.group(1)
+        mkt = match_res.group(2)
+        self.code = ('sh' + code) if mkt == 'XSHG' else ('sz' + code)
+        self.amount = int(data.get('amt','0'))
+        self.price = float(data.get('price','0.00'))
+        self.ttype = data.get('ttype', '')
+        self.stg = data.get('stg','')
+        return True        
     
     def buy(self):
         return {'entrust_no': '7985'} if self.stg == '536' else {'entrust_no': '17985'}
@@ -115,7 +131,7 @@ class RedisService(object):
         self.receivers = ['xxx@qq.com']
         self.CQMT = miniqmt()
         self.is_test = False
-        self.stk_code_pattern = re.compile(r'(\d{6}).([A-Z]{4})')   #(r'(\d{6}).*')
+
         #self.CQMT.CustomTrade(RedisService.path, RedisService.acc)
         self.thread = Thread(target=self.loop_consuming, daemon=True)
         signal.signal(signal.SIGINT, self.handle_interrupt)
@@ -203,27 +219,21 @@ class RedisService(object):
         :return:
         """
         print(f'业务执行msgId={msgId} bizData={data}')
+        strategy = data.get('stg')
+        rec_type = data.get('type')
+        if not strategy or not rec_type:
+            return True
         try:
-            code = data.get('code', '600000.XSHG')
-            match_res = self.stk_code_pattern.search(code)
-            if not match_res:
-                print("illegal param code %s" % code)
-                return True
-            code = match_res.group(1)
-            mkt = match_res.group(2)
-            self.CQMT.code = ('sh' + code) if mkt == 'XSHG' else ('sz' + code)
-            self.CQMT.amount = int(data.get('amt','0'))
-            self.CQMT.price = float(data.get('price','0.00'))
-            self.CQMT.ttype = data.get('ttype', '')
-            self.CQMT.stg = data.get('stg', '')
+            if not self.CQMT.set_data(data):
+                return False
             #remark = data.get('remark', '')
             rec_no = 1 
             tmp = ''
             if self.is_test:
                 print(f'{data}')
                 return True
-            if data['type'] in self.CQMT.process:
-                func = self.CQMT.process[data['type']]
+            if rec_type in self.CQMT.process:
+                func = self.CQMT.process[rec_type]
                 tmp = func()
             else:
                 rec_no = 0
@@ -256,7 +266,7 @@ class RedisService(object):
             msg_data = {
                 'stg': data.get('stg', ''),
                 'ret': rec_no,
-                'type': data['type'],
+                'type': rec_type,
                 'msg': str(tmp)
             }
             self.redis.xadd(self.msg_name, msg_data)
