@@ -14,7 +14,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField('登录')
 
 class OrderForm(FlaskForm):
-    code = StringField(u'代码：', validators=[DataRequired()])
+    code = StringField(u'代码：')
     code_select = SelectField(u'代码：', choices=[])
     price = DecimalField(u'价格：', validators=[DataRequired()])
     volume = IntegerField(u'数量：', validators=[DataRequired()])
@@ -50,6 +50,22 @@ class QueryForm(FlaskForm):
     submit = SubmitField(u'提交查询')
 
 class TaskForm(FlaskForm):
+    userid = RadioField(
+        '账户：',
+        validators=[DataRequired()],
+        choices=[
+            ('537', '主账户'),
+            ('536', '备账户')
+        ]
+    )
+    type = SelectField(
+        '委托方式：',
+        validators=[DataRequired()],
+        choices=[
+            ('BALANCE', '查询'),
+            ('CANCEL', '撤销')
+        ]
+    )
     submit = SubmitField('提交')
 
 class TradeQueryForm(FlaskForm):

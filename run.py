@@ -4,8 +4,8 @@ from time import sleep
 from app import create_app, db, get_redis_client
 from app.models import Admin
 from app.logging_config import logger
-from app.tasks import monitor_redis, stop_scheduler
-import atexit
+from app.tasks import monitor_redis
+#`import atexit
 
 app = create_app()
 
@@ -26,7 +26,7 @@ def start_monitor_redis():
 
 if __name__ == '__main__':
     # 注册退出时的清理函数
-    atexit.register(stop_scheduler)
+    # atexit.register(stop_scheduler)
     
     av1 = len(sys.argv) > 1
     if av1:

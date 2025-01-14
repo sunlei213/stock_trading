@@ -1,9 +1,13 @@
+import threading
+import queue
+from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from apscheduler.schedulers.background import BackgroundScheduler
 from app import db, get_redis_client
 from app.models import User, Stock, Trade, Reciver
 from app.logging_config import logger
 from datetime import datetime
+
 
 import re
 
@@ -122,6 +126,74 @@ class MessageType:
         return f"金额：{data.get('可用金额', 'N/A')}, 市值:{data.get('股票市值', 'N/A')}, 总资产：{data.get('总资产', 'N/A')}"
 
 message_type = MessageType()
+
+class msg_queue:
+    def __init__(self):
+        self.queue = queue.Queue()
+        self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
+        self.threadpool = ThreadPoolExecutor(max_workers=10)
+        self.main_thread.start()
+
+    def start(self):
+        self.main_thread.start()
+
+    def query_account_funds(self, user_id):
+        """查询账户资金"""
+        for _ in range(3):
+            for msg_type in ['BALANCE', 'POSITION','TRADE']:
+                self.queue.put({'type': msg_type,'stg': user_id})
+                sleep(1)
+            sleep(20)
+
+    def start_query(self, user_id):
+        """开始查询"""
+        if not self.main_thread.is_alive():
+            self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
+            self.main_thread.start()
+        self.threadpool.submit(self.query_account_funds, user_id)
+
+    def send_msg(self, data):
+        self.queue.put(data)
+        if not self.main_thread.is_alive():
+            self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
+            self.main_thread.start()
+
+    def get_msg(self):
+        """获取消息并处理"""
+        logger.info("消息队列线程启动")
+        is_send = True
+        while True:
+            if not self.queue.empty():
+                if is_send:
+                    data = self.queue.get()
+                if data:
+                    try:
+                        redis_client = get_redis_client()
+                        if not redis_client:
+                            logger.error("无法获取Redis客户端")
+                            is_send = False
+                            continue
+
+                        if not redis_client.send_command(data):
+                            logger.error(f"发送指令失败：{data}")
+                            is_send = False
+                            continue
+                    except Exception as e:
+                        logger.error(f"发送指令失败：{data}, 错误信息：{e}")
+                        is_send = False
+                        # 记录异常堆栈信息
+                        logger.exception(e)
+                    is_send = True
+                else:
+                    logger.info("消息队列线程退出")
+                    break
+
+msg_queue = msg_queue()
+
+def get_msg_queue():
+    """获取消息队列实例"""
+    return msg_queue
+
 
 def query_account_funds():
     """每 20 秒查询账户资金"""

@@ -69,9 +69,9 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                            {{ form1.code_select(class="form-select", required=True) }}
+                            {{ form1.code_select(class="form-select") }}
                             {{ form1.code(class="form-control", placeholder="代码：600000",
-                                pattern="\d{6}", title="请输入6位数字股票代码", required=True) }}
+                                pattern="\d{6}", title="请输入6位数字股票代码") }}
                     </div>
                     <div class="col-md-6">
                         {% for sc in form1.shorsz %}

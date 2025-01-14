@@ -3,30 +3,67 @@
 {% block content %}
 <div class="container">
     <h2 class="mb-4">定时任务管理</h2>
-    <div class="card">
+    <!-- 委托表单 -->
+    <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            任务控制
+            查询撤销信息
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>当前状态：</h5>
-                    <p>任务运行状态: <span id="status" class="badge {% if is_running %}bg-success{% else %}bg-danger{% endif %}">
-                        {% if is_running %}运行中{% else %}已停止{% endif %}
-                    </span></p>
+            <form id="form2" method="POST" action="{{ link }}">
+                {{ form.csrf_token }}
+                {% if form.errors %}
+                    {{ form.errors }}
+                {% endif %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                            {{ form.type(class="form-select") }}
+                    </div>
+                    <div class="col-md-6">
+                        {% for sc in form.userid %}
+                            {{ sc(class="form-check-input", id=sc.id) }} {{ sc.label(class="form-check-label") }}
+                        {% endfor %}
+                    </div>
                 </div>
-                <div class="col-md-6 text-end">
-                    <form method="POST">
-                        {{ form.csrf_token }}
-                        {% if not is_running %}
-                            <button type="submit" name="action" value="start" class="btn btn-success">启动任务</button>
-                        {% else %}
-                            <button type="submit" name="action" value="stop" class="btn btn-danger">停止任务</button>
-                        {% endif %}
-                    </form>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-12 text-end">
+                        <button type="submit" class="btn btn-primary">提交委托</button>
+                        <button type="reset" class="btn btn-secondary">重置</button>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
+
+    <!-- 返回记录表格 -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            最近委托记录
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>账户</th>
+                        <th>委托时间</th>
+                        <th>委托类型</th>
+                        <th>返回信息</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ order.stg }}</td>
+                        <td>{{ order.start_time }}</td>
+                        <td>{{ order.type }}</td>
+                        <td>{{ order.msg }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 {% endblock %} 

@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required
-from app import db, get_redis_client
-from app.models import User,  Admin, Stock, Trade, Sender
+from app import db
+from app.models import User,  Admin, Stock, Trade, Sender, Reciver
 from app.forms import LoginForm, OrderForm, QueryForm, TaskForm, TradeQueryForm
 from datetime import datetime
 from app.logging_config import logger
-from app.tasks import get_scheduler, start_scheduler, stop_scheduler
+from app.tasks import get_msg_queue
 
 bp = Blueprint('main', __name__)
 
@@ -109,6 +109,11 @@ def place_order():
                 g_state.userid = int(form.userid.data)
         else:
             form = OrderForm(request.form)
+            # 重新设置code_select的choices
+            stocks = Stock.query.filter_by(user_id=g_state.userid).all()
+            stock_choices = [(str(stock.stock_code), f"{stock.stock_code} - {stock.stock_name}") for stock in stocks]
+            form.code_select.choices = stock_choices if stock_choices else [('', '暂无持仓')]
+            
             if form.validate():
                 send = Sender()
                 form.populate_obj(send)
@@ -125,7 +130,6 @@ def place_order():
                 tmp_price = float(send.price)
                 logger.info(f"{tmp_code} {tmp_price} {send.volume} {send.type} {g_state.userid}")
                 try:
-                    db.session.begin()
                     db.session.add(send)
                     db.session.commit()
                     
@@ -137,12 +141,9 @@ def place_order():
                         'price': tmp_price,
                         'ttype' : ""
                     }
-                    redis_client = get_redis_client()
-                    if not redis_client.send_command(message_data):
-                        db.session.rollback()
-                        flash('委托提交失败，请重试', 'danger')
-                        return redirect(url_for('main.place_order'))
-                        
+                    msg_queue = get_msg_queue()
+                    msg_queue.send_msg(message_data)
+                       
                     flash('委托提交成功', 'success')
                 except Exception as e:
                     db.session.rollback()
@@ -181,23 +182,42 @@ def place_order():
 @bp.route('/tasks', methods=['GET', 'POST'])
 @login_required
 def tasks():
-    form = TaskForm()
-    scheduler = get_scheduler()
-    is_running = False
-    if scheduler:
-        logger.info("调度器已经运行")
-        is_running = True
 
     if request.method == 'POST':
-        action = request.form.get('action')
-        if action == 'start' and not is_running:
-            start_scheduler()
-            logger.info("定时任务已启动")
-            flash('定时任务已启动', 'success')
-        elif action == 'stop' and is_running:
-            stop_scheduler()
-            logger.info("定时任务已停止")
-            flash('定时任务已停止', 'success')
-        return redirect(url_for('main.tasks'))
+        form = TaskForm(request.form)
+        if form.validate():
+            if form.type.data == 'CANCEL':
+                # 取消所有委托
+                send = Sender()
+                now = datetime.now()
+                send.meeting_day = now.strftime("%Y%m%d")
+                send.start_time = now.strftime("%H:%M:%S")
+                send.type = "CANCEL"
+                send.user_id = int(form.userid.data)
+                send.volume = 1
+                send.code = "600000"
+                send.shorsz = "XSHG"
+                send.price = 1.00
+                db.session.add(send)
+                db.session.commit()
+                message_data = {
+                    'code': f"{send.code}.{send.shorsz}",
+                    'amt': send.volume, 
+                    'type': send.type, 
+                    'ttype': "", 
+                    'price': 1.00, 
+                    'stg': str(send.user_id)      
+                }
+                msg_queue = get_msg_queue()
+                msg_queue.send_msg(message_data)
+            else:
+                # 启动定时任务
+                msg_queue = get_msg_queue()
+                msg_queue.start_query(str(form.userid.data))                
 
-    return render_template('tasks.html', form=form, is_running=is_running)
+        return redirect(url_for('main.tasks'))
+    # 获取用户最近的委托记录和持仓数据
+    form = TaskForm()
+    recive = Reciver.query.filter(Reciver.meeting_day == datetime.now().strftime("%Y%m%d")).order_by(Reciver.start_time.desc()).limit(20).all()
+
+    return render_template('tasks.html', form=form, orders=recive, link=url_for('main.tasks'))
