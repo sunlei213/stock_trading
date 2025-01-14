@@ -134,7 +134,7 @@
                         <td>{{ order.user_id }}</td>
                         <td>{{ order.start_time }}</td>
                         <td>{{ order.code }}</td>
-                        <td>{{ '买入' if order.type == 'BUY' else '卖出' }}</td>
+                        <td>{{ order.type }}</td>
                         <td>{{ order.price }}</td>
                         <td>{{ order.volume }}</td>
                         <td>{{ '沪' if order.shorsz == 'XSHG' else '深' }}</td>
