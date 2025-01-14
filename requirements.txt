@@ -9,3 +9,4 @@ wtforms
 pandas
 numpy
 matplotlib
+rometheus_client
