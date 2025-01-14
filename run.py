@@ -24,24 +24,25 @@ def start_monitor_redis():
             t = threading.Thread(target=run_monitor, daemon=True)
             t.start()
 
+def initialize_db():
+    with app.app_context():
+        redis_client = get_redis_client()
+        redis_client.xgroup_create()
+        username = input("username:")
+        password = input("password:")
+        db.drop_all()
+        db.create_all()
+        admin = Admin(username=username, password=password)
+        db.session.add(admin)
+        db.session.commit()
+    logger.info("数据库创建成功")
+
 if __name__ == '__main__':
     # 注册退出时的清理函数
     # atexit.register(stop_scheduler)
-    
-    av1 = len(sys.argv) > 1
-    if av1:
-        with app.app_context():
-            redis_client = get_redis_client()
-            redis_client.xgroup_create()
-            username = input("username:")
-            password = input("password:")
-            db.drop_all()
-            db.create_all()
-            admin = Admin(username=username, password=password)
-            db.session.add(admin)
-            db.session.commit()
-        logger.info("数据库创建成功")
 
+    if len(sys.argv) > 1:
+        initialize_db()
     else:
         logger.info("启动后台服务")
         threading.Thread(target=start_monitor_redis, daemon=True).start()
