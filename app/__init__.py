@@ -28,6 +28,10 @@ def get_redis_client():
     """获取 Redis 客户端实例"""
     return redis_client
 
+from prometheus_client import make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.profiler import ProfilerMiddleware
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -39,10 +43,22 @@ def create_app():
     login_manager.login_message = '请先登录!'
     login_manager.login_message_category = 'warning'
     
-
-    
     # 注册蓝图
     from app import routes
     app.register_blueprint(routes.bp)
+    
+    # 添加性能监控
+    if app.config.get('ENABLE_MONITORING', False):
+        app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+            '/metrics': make_wsgi_app()
+        })
+        
+        if app.config.get('ENABLE_PROFILING', False):
+            app.wsgi_app = ProfilerMiddleware(
+                app.wsgi_app,
+                profile_dir='./profiles',
+                restrictions=[30],
+                sort_by=('cumulative', 'time', 'calls')
+            )
     
     return app

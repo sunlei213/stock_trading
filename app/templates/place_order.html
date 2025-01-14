@@ -69,8 +69,9 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                            {{ form1.code_select(class="form-select") }}
-                            {{ form1.code(class="form-control", placeholder="代码：600000") }}
+                            {{ form1.code_select(class="form-select", required=True) }}
+                            {{ form1.code(class="form-control", placeholder="代码：600000",
+                                pattern="\d{6}", title="请输入6位数字股票代码", required=True) }}
                     </div>
                     <div class="col-md-6">
                         {% for sc in form1.shorsz %}
@@ -80,7 +81,8 @@
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
-                        {{ form1.price(class="form-control", step="0.01", placeholder="价格：0.000") }}
+                        {{ form1.price(class="form-control", step="0.01", placeholder="价格：0.000",
+                            min="0.01", max="9999.99", required=True) }}
                     </div>
                     <div class="col-md-6">
                         {{ form1.volume(class="form-control", step="100", placeholder="数量：100") }}
@@ -171,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const volumeInput = document.getElementById('volume');
     
     // 股票数据
-    const stocksData = {{ stocks|tojson|safe }};
+    const stocksData = JSON.parse('{{ stocks|tojson|safe }}');
     
     // 初始化显示/隐藏
     if (typeSelect.value === 'SELL') {

@@ -125,11 +125,21 @@ message_type = MessageType()
 
 def query_account_funds():
     """每 20 秒查询账户资金"""
-    redis_client = get_redis_client()
-    for stg in ["536", "537"]:
-        for msg_type in ['BALANCE', 'POSITION']:
-            redis_client.send_command({'type': msg_type, 'stg': stg})
-            sleep(1)
+    try:
+        redis_client = get_redis_client()
+        if not redis_client:
+            logger.error("无法获取Redis客户端")
+            return
+
+        for stg in ["536", "537"]:
+            for msg_type in ['BALANCE', 'POSITION']:
+                if not redis_client.send_command({'type': msg_type, 'stg': stg}):
+                    logger.error(f"发送{msg_type}指令失败")
+                sleep(1)
+    except Exception as e:
+        logger.error(f"查询账户资金失败: {e}")
+        # 记录异常堆栈信息
+        logger.exception(e)
 
 def query_orders_and_trades():
     """每 20 秒查询委托和成交"""

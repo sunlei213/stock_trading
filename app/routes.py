@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required
 from app import db, get_redis_client
 from app.models import User,  Admin, Stock, Trade, Sender
-from app.forms import LoginForm, OrderForm, QueryForm, TaskForm
+from app.forms import LoginForm, OrderForm, QueryForm, TaskForm, TradeQueryForm
 from datetime import datetime
 from app.logging_config import logger
 from app.tasks import get_scheduler, start_scheduler, stop_scheduler
@@ -63,16 +63,44 @@ def orders():
     orders = Stock.query.filter_by(user_id=g_state.userid).all()
     return render_template('orders.html', orders=orders)
 
-@bp.route('/trades')
+@bp.route('/trades', methods=['GET', 'POST'])
 @login_required
 def trades():
-    trades = Trade.query.filter_by(user_id=g_state.userid).all()
-    return render_template('trades.html', trades=trades)
+    form = TradeQueryForm()
+    
+    # 初始化用户选择
+    users = User.query.with_entities(User.id).distinct().all()
+    form.user_id.choices = [(user.id, f'账户 {user.id}') for user in users]
+    
+    # 处理表单提交
+    if form.validate_on_submit():
+        start_date = form.start_date.data.strftime('%Y%m%d')
+        end_date = form.end_date.data.strftime('%Y%m%d')
+        user_id = form.user_id.data
+        
+        # 查询交易记录
+        trades = Trade.query.filter(
+            Trade.send_day.between(start_date, end_date),
+            Trade.user_id == user_id
+        ).order_by(Trade.start_time.desc()).all()
+    else:
+        # 默认显示当天数据
+        today = datetime.now().strftime('%Y%m%d')
+        trades = Trade.query.filter(
+            Trade.send_day == today,
+            Trade.user_id == g_state.userid
+        ).order_by(Trade.start_time.desc()).all()
+    
+    return render_template('trades.html',
+                         trades=trades,
+                         form=form,
+                         selected_user_id=form.user_id.data or g_state.userid,
+                         link=url_for('main.trades'))
 
 @bp.route('/place_order', methods=['GET', 'POST'])
 @login_required
 def place_order():
-    redis_client = get_redis_client()
+    
     if request.method == 'POST':
         form_id = request.form.get('form_id')
         if form_id == 'form1':
@@ -96,18 +124,32 @@ def place_order():
                 tmp_code = f"{send.code}.{send.shorsz}"
                 tmp_price = float(send.price)
                 logger.info(f"{tmp_code} {tmp_price} {send.volume} {send.type} {g_state.userid}")
-                db.session.add(send)
-                db.session.commit()
-                message_data = {
-                    'stg': str(g_state.userid),     
-                    'type': send.type, 
-                    'code': tmp_code,
-                    'amt': send.volume, 
-                    'price': tmp_price, 
-                    'ttype' : "" 
-                }
-                redis_client.send_command(message_data)
-                flash('委托提交成功', 'success')
+                try:
+                    db.session.begin()
+                    db.session.add(send)
+                    db.session.commit()
+                    
+                    message_data = {
+                        'stg': str(g_state.userid),
+                        'type': send.type,
+                        'code': tmp_code,
+                        'amt': send.volume,
+                        'price': tmp_price,
+                        'ttype' : ""
+                    }
+                    redis_client = get_redis_client()
+                    if not redis_client.send_command(message_data):
+                        db.session.rollback()
+                        flash('委托提交失败，请重试', 'danger')
+                        return redirect(url_for('main.place_order'))
+                        
+                    flash('委托提交成功', 'success')
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error(f"委托提交失败: {e}")
+                    logger.exception(e)
+                    flash('委托提交失败，请重试', 'danger')
+                    return redirect(url_for('main.place_order'))
             else:
                 logger.error(f"错误信息:{form.errors}")
 

@@ -15,6 +15,7 @@ class RedisClient:
         self.consumer_group = "msg_group"
         self.consumer_name = None
         self.order_stream_name = None
+        self.degraded_mode = False  # 新增降级模式标志
         self._connect()
 
     def _connect(self):
@@ -42,22 +43,27 @@ class RedisClient:
 
     def _reconnect(self):
         """重连 Redis"""
-        print("尝试重新连接 Redis...")
+        logger.info("尝试重新连接 Redis...")
         retry_count = 0
-        max_retries = 5  # 最大重试次数
-        retry_delay = 5  # 重试间隔（秒）
+        max_retries = 10  # 增加最大重试次数
+        initial_delay = 1  # 初始重试间隔（秒）
+        max_delay = 60  # 最大重试间隔（秒）
 
         while retry_count < max_retries:
             try:
                 self._connect()  # 重新创建连接池
+                self.degraded_mode = False  # 退出降级模式
                 logger.info("Redis 重连成功！")
                 return
             except ConnectionError as e:
                 retry_count += 1
-                logger.error(f"重连失败 ({retry_count}/{max_retries}): {e}")
-                time.sleep(retry_delay)
+                wait_time = min(initial_delay * (2 ** (retry_count - 1)), max_delay)
+                logger.error(f"重连失败 ({retry_count}/{max_retries}), {wait_time}秒后重试: {e}")
+                time.sleep(wait_time)
 
-        raise ConnectionError("无法重新连接到 Redis，请检查 Redis 服务状态。")
+        logger.critical("Redis 重连失败，进入降级模式")
+        self.degraded_mode = True
+        self.connection_pool = None
 
     def set_stream_name(self, stream_name, consumer_group, consumer_name, order_stream_name):
         self.stream_name = stream_name
@@ -73,17 +79,32 @@ class RedisClient:
 
     def send_command(self, command=None, stream_name=None):
         """发送指令到 Redis Stream"""
-        order_stream = stream_name
-        if command:
-            if not order_stream:
-                order_stream = self.order_stream_name
-            try:
-                conn = self.get_connection()
+        if self.degraded_mode:
+            logger.warning("Redis 处于降级模式，无法发送指令")
+            return False
+
+        order_stream = stream_name or self.order_stream_name
+        if not command or not order_stream:
+            return False
+
+        try:
+            conn = self.get_connection()
+            if conn:
                 conn.xadd(order_stream, command)
-            except ConnectionError:
-                self._reconnect()
-                conn = self.get_connection()
-                conn.xadd(order_stream, command)
+                return True
+            return False
+        except ConnectionError as e:
+            logger.error(f"发送指令失败: {e}")
+            self._reconnect()
+            if not self.degraded_mode:
+                try:
+                    conn = self.get_connection()
+                    if conn:
+                        conn.xadd(order_stream, command)
+                        return True
+                except ConnectionError:
+                    logger.error("重试发送指令失败")
+            return False
 
     def read_messages(self, stream_name, last_id='0', count=1):
         """从 Redis Stream 读取消息"""

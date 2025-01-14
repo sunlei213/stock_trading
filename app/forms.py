@@ -1,6 +1,11 @@
-from flask_wtf import FlaskForm 
-from wtforms.fields import StringField, SubmitField, SelectField, RadioField, DecimalField, IntegerField, PasswordField
+from flask_wtf import FlaskForm
+from wtforms.fields import StringField, SubmitField, SelectField, RadioField, DecimalField, IntegerField, PasswordField, DateField
 from wtforms.validators import DataRequired
+from wtforms.widgets import DateInput
+import datetime
+
+from wtforms.widgets import html_params
+
 
 
 class LoginForm(FlaskForm):
@@ -46,3 +51,16 @@ class QueryForm(FlaskForm):
 
 class TaskForm(FlaskForm):
     submit = SubmitField('提交')
+
+class TradeQueryForm(FlaskForm):
+    start_date = DateField('起始日期',
+                         format='%Y-%m-%d',
+                         widget=DateInput(),
+                         default=datetime.date.today(),
+                         validators=[DataRequired()])
+    end_date = DateField('终止日期',
+                        format='%Y-%m-%d',
+                        widget=DateInput(),
+                        default=datetime.date.today(),
+                        validators=[DataRequired()])
+    user_id = SelectField('选择账户', coerce=int)
