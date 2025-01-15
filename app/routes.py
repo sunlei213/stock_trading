@@ -5,7 +5,7 @@ from app.models import User,  Admin, Stock, Trade, Sender, Reciver
 from app.forms import LoginForm, OrderForm, QueryForm, TaskForm, TradeQueryForm
 from datetime import datetime
 from app.logging_config import logger
-from app.tasks import get_msg_queue
+from app.tasks import send_msg, start_query
 
 bp = Blueprint('main', __name__)
 
@@ -141,8 +141,8 @@ def place_order():
                         'price': tmp_price,
                         'ttype' : ""
                     }
-                    msg_queue = get_msg_queue()
-                    msg_queue.send_msg(message_data)
+                    
+                    send_msg(message_data)
                        
                     flash('委托提交成功', 'success')
                 except Exception as e:
@@ -208,12 +208,12 @@ def tasks():
                     'price': 1.00, 
                     'stg': str(send.user_id)      
                 }
-                msg_queue = get_msg_queue()
-                msg_queue.send_msg(message_data)
+                
+                send_msg(message_data)
             else:
                 # 启动定时任务
-                msg_queue = get_msg_queue()
-                msg_queue.start_query(str(form.userid.data))                
+                
+                start_query(str(form.userid.data))                
 
         return redirect(url_for('main.tasks'))
     # 获取用户最近的委托记录和持仓数据

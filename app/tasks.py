@@ -1,8 +1,8 @@
 import threading
-from queue import Full, SimpleQueue
+from multiprocessing import  Queue
+from queue import Full
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from apscheduler.schedulers.background import BackgroundScheduler
 from app import db, get_redis_client
 from app.models import User, Stock, Trade, Reciver
 from app.logging_config import logger
@@ -11,37 +11,6 @@ from datetime import datetime
 
 import re
 
-# 全局调度器实例
-scheduler = None
-
-def init_scheduler():
-    """初始化调度器"""
-    global scheduler
-    if scheduler is None:
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(query_account_funds, 'interval', seconds=20)
-        scheduler.add_job(query_orders_and_trades, 'interval', seconds=20)
-
-def get_scheduler():
-    """获取调度器实例"""
-    global scheduler
-    return scheduler
-
-def start_scheduler():
-    """启动定时任务"""
-    global scheduler
-    init_scheduler()
-    if scheduler and not scheduler.running:
-        scheduler.start()
-        logger.info("调度器已启动")
-
-def stop_scheduler():
-    """停止定时任务"""
-    global scheduler
-    if scheduler and scheduler.running:
-        scheduler.shutdown()
-        scheduler = None
-        logger.info("调度器已关闭")
 
 class MessageType:
     def __init__(self): 
@@ -127,12 +96,15 @@ class MessageType:
 
 message_type = MessageType()
 
-class msg_queue:
+class Msg_queue:
     def __init__(self):
-        self.queue = SimpleQueue()
+        self.queue = None
         self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
         self.threadpool = ThreadPoolExecutor(max_workers=10)
         # self.main_thread.start()
+
+    def set_queue(self,queue):
+        self.queue = queue
 
     def start(self):
         self.main_thread.start()
@@ -140,7 +112,7 @@ class msg_queue:
     def query_account_funds(self, user_id):
         """查询账户资金"""
         for _ in range(3):
-            for msg_type in ['BALANCE', 'POSITION','TRADE']:
+            for msg_type in ['POSITION', 'BALANCE', 'TRADE', 'BALANCE']:
                 try:
                     self.queue.put_nowait({'type': msg_type,'stg': user_id})
                 except Full:
@@ -153,32 +125,6 @@ class msg_queue:
         if not self.main_thread.is_alive():
             self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
             self.main_thread.start()
-
-    def start_query(self, user_id):
-        """开始查询"""
-        logger.info(f"开始查询线程")
-        try:
-            self.queue.put_nowait({'type': 'aaa', 'user_id': user_id})
-        except Full:
-            logger.error("消息队列已满")
-        """
-        if not self.main_thread.is_alive():
-            self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
-            self.main_thread.start()
-        self.threadpool.submit(self.query_account_funds, user_id)
-        """
-
-    def send_msg(self, data):
-        logger.info(f"发送消息：{data}")
-        try:
-            self.queue.put_nowait(data)
-        except Full:
-            logger.error("消息队列已满")
-        """
-        if not self.main_thread.is_alive():
-            self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
-            self.main_thread.start()
-        """
 
     def get_msg(self):
         """获取消息并处理"""
@@ -214,11 +160,46 @@ class msg_queue:
                     logger.info("消息队列线程退出")
                     break
 
-msg_queue = msg_queue()
+global_queue = Queue()
+
+msg_queue = Msg_queue()
+
 
 def get_msg_queue():
     """获取消息队列实例"""
+    global global_queue
+    if not msg_queue.queue:
+        msg_queue.set_queue(global_queue)
+        logger.info('msg_queue设置队列')
     return msg_queue
+
+def start_query(user_id):
+    """开始查询"""
+    global global_queue
+    logger.info(f"开始查询线程")
+    try:
+        global_queue.put_nowait({'type': 'aaa', 'user_id': user_id})
+    except Full:
+        logger.error("消息队列已满")
+    """
+    if not self.main_thread.is_alive():
+        self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
+        self.main_thread.start()
+    self.threadpool.submit(self.query_account_funds, user_id)
+    """
+
+def send_msg(self, data):
+    global global_queue
+    logger.info(f"发送消息：{data}")
+    try:
+        self.queue.put_nowait(data)
+    except Full:
+        logger.error("消息队列已满")
+    """
+    if not self.main_thread.is_alive():
+        self.main_thread = threading.Thread(target=self.get_msg, daemon=True)
+        self.main_thread.start()
+    """
 
 
 def query_account_funds():
