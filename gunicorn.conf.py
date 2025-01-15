@@ -24,7 +24,7 @@ max_requests_jitter = 50
 
 # 日志配置
 
-errorlog = "/root/stock_trading/logs/error.log"
+errorlog = "./logs/error.log"
 
 app = create_app()
 

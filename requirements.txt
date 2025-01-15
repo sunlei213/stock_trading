@@ -6,7 +6,5 @@ SQLAlchemy
 flask_sqlalchemy
 flask_wtf
 wtforms
-pandas
-numpy
 prometheus_client
 gunicorn
