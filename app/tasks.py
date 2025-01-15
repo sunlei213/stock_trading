@@ -112,7 +112,7 @@ class Msg_queue:
     def query_account_funds(self, user_id):
         """查询账户资金"""
         for _ in range(3):
-            for msg_type in ['POSITION', 'BALANCE', 'TRADE', 'BALANCE']:
+            for msg_type in ['POSITION', 'BALANCE', 'TRADE']:
                 try:
                     self.queue.put_nowait({'type': msg_type,'stg': user_id})
                 except Full:

@@ -4,6 +4,28 @@ from app import create_app
 from app.logging_config import logger
 from app.tasks import monitor_redis, get_msg_queue
 
+# 绑定地址和端口
+bind = "0.0.0.0:8001"
+
+# worker 数量
+workers = 4
+
+# worker 类型
+
+# worker_class = "gthread"
+
+
+# 线程数
+# threads = 4 
+
+# 性能调优
+max_requests = 1000
+max_requests_jitter = 50
+
+# 日志配置
+
+errorlog = "/root/stock_trading/logs/error.log"
+
 app = create_app()
 
 def start_monitor_redis():

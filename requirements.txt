@@ -9,3 +9,4 @@ wtforms
 pandas
 numpy
 prometheus_client
+gunicorn

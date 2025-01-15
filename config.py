@@ -4,7 +4,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'A0Zrk8j/3yX4R~XHH!jmN]LWX/,?RT' # 用于Flask-Login的密钥
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///test.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    LOG_FILE = 'app.log'
+    LOG_FILE = 'logs/app.log'
     LOG_LEVEL = 'INFO'
     ENABLE_MONITORING = False #是否启用性能监控
     ENABLE_PROFILING = False #是否启用性能分析
