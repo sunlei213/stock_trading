@@ -33,8 +33,6 @@ def child_msg_queue():
 def when_ready(server):
     logger.info("启动后台服务")
     threading.Thread(target=start_monitor_redis, daemon=True).start()
-
-def post_fork(server, worker):
-    logger.info("启动子进程")
     threading.Thread(target=child_msg_queue, daemon=True).start()
+
 
