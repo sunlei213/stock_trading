@@ -6,7 +6,7 @@ After=network.target
 User=root
 WorkingDirectory=/root/stock_trading
 Environment="PATH=/root/stock_trading/.venv/bin"
-ExecStart=/root/stock_trading/.venv/bin/gunicorn -c gunicorn.conf.py -w 4 -b 0.0.0.0:8001 "run:app"
+ExecStart=/root/stock_trading/.venv/bin/gunicorn -c gunicorn.conf.py -b 0.0.0.0:8001 "run:app"
 
 [Install]
 WantedBy=multi-user.target

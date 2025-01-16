@@ -38,13 +38,22 @@ class MessageType:
             code = match_res.group(1)
             record = Trade.query.filter_by(user_id=user_id, no=trade.get('委托编号'), send_day=today).first()
             if not record:
-                record = Trade(user_id=user_id, no=trade.get('委托编号'), send_day=today, 
-                              start_time=trade.get('委托时间', 'N/A'), stock_code=code, 
-                              stock_name=trade.get('证券名称', 'N/A'), type=trade.get('买卖', 'N/A'), 
-                              price=trade.get('委托价格', 0.0), volume=trade.get('委托数量', 0), 
-                              price1=trade.get('成交价格', 0.0), volume1=trade.get('成交数量', 0), 
-                              return_vol=trade.get('撤单数量', 0), status=trade.get('委托状态', 'N/A'), 
-                              msg=trade.get('返回信息', 'N/A'), shorsz=trade.get('交易市场', 'N/A'))
+                record = Trade(
+                    user_id=user_id, 
+                    no=trade.get('委托编号'), 
+                    send_day=today,
+                    start_time=trade.get('委托时间', 'N/A'), 
+                    stock_code=code, 
+                    stock_name=trade.get('证券名称', 'N/A'), 
+                    type=trade.get('买卖', 'N/A'),
+                    price=trade.get('委托价格', 0.0), 
+                    volume=trade.get('委托数量', 0),
+                    price1=trade.get('成交价格', 0.0), 
+                    volume1=trade.get('成交数量', 0),
+                    return_vol=trade.get('撤单数量', 0), 
+                    status=trade.get('委托状态', 'N/A'),
+                    msg=trade.get('返回信息', 'N/A'), 
+                    shorsz=trade.get('交易市场', 'N/A'))
                 db.session.add(record)
                 db.session.commit()
             record.status = trade.get('委托状态', 'N/A')
@@ -57,32 +66,80 @@ class MessageType:
 
     def _process_position(self, user_id, msg):
 
-        for stock in msg:
-            match_res = self.stk_code_pattern.search(stock.get('证券代码'))
-            if not match_res:
-                continue
-            code = match_res.group(1)
-            record = Stock.query.filter_by(user_id=user_id, stock_code=code).first()
-            if not record:
-                record = Stock(user_id=user_id, stock_code=code, stock_name=stock.get('证券名称', 'N/A'), quantity=0, usedstock=0, price=0.00, now_price=0.00, loss=0.00, loss_per=0.00, lock_quantity=0, buy_quantity=0, sell_quantity=0)
-                db.session.add(record)
+        updated_count = 0
+        current_stock_codes = set()  # 用于存储当前持仓数据中的股票代码
+        try:
+            for stock in msg:
+                match_res = self.stk_code_pattern.search(stock.get('证券代码',''))
+                if not match_res:
+                    continue
+                code = match_res.group(1)
+                current_stock_codes.add(stock)
+                record = Stock.query.filter_by(user_id=user_id, stock_code=code).first()
+            # 创建新记录（如果不存在）
+                if not record:
+                    record = Stock(
+                        user_id=user_id,
+                        stock_code=code,
+                        stock_name=stock.get('证券名称', 'N/A'),
+                        quantity=0,
+                        usedstock=0,
+                        price=0.00,
+                        now_price=0.00,
+                        loss=0.00,
+                        loss_per=0.00,
+                        lock_quantity=0,
+                        buy_quantity=0,
+                        sell_quantity=0
+                    )
+                    db.session.add(record)
+                    db.session.commit()
+                record.quantity = int(stock.get('参考持股', '0'))
+                record.usedstock = int(stock.get('可用股份', '0'))
+                record.price = float(stock.get('成本价', '0.00'))
+                record.now_price = float(stock.get('当前价', '0.00'))
+                record.loss = float(stock.get('浮动盈亏', '0.00'))
+                record.loss_per = float(stock.get('盈亏比例(%)', '0.00'))
+                record.lock_quantity = int(stock.get('冻结股份', '0'))
+                record.buy_quantity = int(stock.get('在途股份(买入成交)', '0'))
+                record.sell_quantity = int(stock.get('卖出成交数量', '0'))
                 db.session.commit()
-            record.quantity = int(stock.get('参考持股', '0'))
-            record.usedstock = int(stock.get('可用股份', '0'))
-            record.price = float(stock.get('成本价', '0.00'))
-            record.now_price = float(stock.get('当前价', '0.00'))
-            record.loss = float(stock.get('浮动盈亏', '0.00'))
-            record.loss_per = float(stock.get('盈亏比例(%)', '0.00'))
-            record.lock_quantity = int(stock.get('冻结股份', '0'))
-            record.buy_quantity = int(stock.get('在途股份(买入成交)', '0'))
-            record.sell_quantity = int(stock.get('卖出成交数量', '0'))
+                updated_count += 1
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"处理股票 {code} 时出错: {str(e)}")
+
+        # 第二步：删除不在当前持仓数据中的记录
+        try:
+            # 查询数据库中该用户的所有股票记录
+            db_records = Stock.query.filter_by(user_id=user_id).all()
+
+            # 遍历数据库记录，删除不在当前持仓数据中的记录
+            for record in db_records:
+                if record.stock_code not in current_stock_codes:
+                    db.session.delete(record)
+                    logger.info(f"删除股票记录: 用户 {user_id}, 股票代码 {record.stock_code}")
+
+            # 提交删除操作
             db.session.commit()
-        return "持仓查询"
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"删除不在持仓数据中的记录时出错: {str(e)}")
+
+        return f"持仓查询完成"
 
     def _process_balance(self, user_id, data):
         record = User.query.filter_by(id=user_id).first()
         if not record:
-            record = User(id=user_id, username=('孙克昆' if user_id == '536' else '谢爱琴'), balance=0.00, usedmoney=0.00, getmoney=0.00, stocksvalue=0.00, totlemoney=0.00)
+            record = User(
+                id=user_id, 
+                username=('孙克昆' if user_id == '536' else '谢爱琴'), 
+                balance=0.00, 
+                usedmoney=0.00, 
+                getmoney=0.00, 
+                stocksvalue=0.00, 
+                totlemoney=0.00)
             db.session.add(record)
             db.session.commit()
         record.username = '孙克昆' if user_id == '536' else '谢爱琴'
@@ -188,11 +245,11 @@ def start_query(user_id):
     self.threadpool.submit(self.query_account_funds, user_id)
     """
 
-def send_msg(self, data):
+def send_msg(data):
     global global_queue
     logger.info(f"发送消息：{data}")
     try:
-        self.queue.put_nowait(data)
+        global_queue.put_nowait(data)
     except Full:
         logger.error("消息队列已满")
     """
