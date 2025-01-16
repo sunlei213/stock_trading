@@ -3,6 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from .redis_client import RedisClient
 from config import Config, redisConfig
+from prometheus_client import make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.profiler import ProfilerMiddleware
 
 # 初始化扩展
 db = SQLAlchemy()
@@ -28,13 +31,15 @@ def get_redis_client():
     """获取 Redis 客户端实例"""
     return redis_client
 
-from prometheus_client import make_wsgi_app
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.profiler import ProfilerMiddleware
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    
+    # 确保设置了 SECRET_KEY
+    if not app.config.get('SECRET_KEY'):
+        app.config['SECRET_KEY'] = 'your-secret-key-here'
     
     # 初始化扩展
     db.init_app(app)

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session
 from flask_login import login_user, logout_user, login_required
 from app import db
 from app.models import User,  Admin, Stock, Trade, Sender, Reciver
@@ -8,13 +8,6 @@ from app.logging_config import logger
 from app.tasks import send_msg, start_query
 
 bp = Blueprint('main', __name__)
-
-class GlobalState:
-    def __init__(self):
-        self.userid = 536
-        self.is_task_running = False
-
-g_state = GlobalState()
 
 @bp.route('/')
 def index():
@@ -46,21 +39,24 @@ def logout():
 @bp.route('/account', methods=['GET', 'POST'])
 @login_required
 def account():
+    if 'userid' not in session:
+        session['userid'] = 536
+        
     if request.method == 'POST':
         form = QueryForm(request.form)
         if form.validate():
-            g_state.userid = int(form.userid.data)
+            session['userid'] = int(form.userid.data)
         return redirect(url_for('main.account'))
     
     form = QueryForm()
-    account = User.query.filter_by(id=g_state.userid).first()
-    stocks = Stock.query.filter_by(user_id=g_state.userid).all()
+    account = User.query.filter_by(id=session['userid']).first()
+    stocks = Stock.query.filter_by(user_id=session['userid']).all()
     return render_template('account.html', account=account, stocks=stocks, form=form, link=url_for('main.account'))
 
 @bp.route('/orders')
 @login_required
 def orders():
-    orders = Stock.query.filter_by(user_id=g_state.userid).all()
+    orders = Stock.query.filter_by(user_id=session.get('userid', 536)).all()
     return render_template('orders.html', orders=orders)
 
 @bp.route('/trades', methods=['GET', 'POST'])
@@ -88,13 +84,13 @@ def trades():
         today = datetime.now().strftime('%Y%m%d')
         trades = Trade.query.filter(
             Trade.send_day == today,
-            Trade.user_id == g_state.userid
+            Trade.user_id == session.get('userid', 536)
         ).order_by(Trade.start_time.desc()).all()
     
     return render_template('trades.html',
                          trades=trades,
                          form=form,
-                         selected_user_id=form.user_id.data or g_state.userid,
+                         selected_user_id=form.user_id.data or session.get('userid', 536),
                          link=url_for('main.trades'))
 
 @bp.route('/place_order', methods=['GET', 'POST'])
@@ -106,11 +102,11 @@ def place_order():
         if form_id == 'form1':
             form = QueryForm(request.form)
             if form.validate():
-                g_state.userid = int(form.userid.data)
+                session['userid'] = int(form.userid.data)
         else:
             form = OrderForm(request.form)
             # 重新设置code_select的choices
-            stocks = Stock.query.filter_by(user_id=g_state.userid).all()
+            stocks = Stock.query.filter_by(user_id=session.get('userid', 536)).all()
             stock_choices = [(str(stock.stock_code), f"{stock.stock_code} - {stock.stock_name}") for stock in stocks]
             form.code_select.choices = stock_choices if stock_choices else [('', '暂无持仓')]
             
@@ -125,16 +121,16 @@ def place_order():
                 send.meeting_day = now.strftime("%Y%m%d")
                 send.start_time = now.strftime("%H:%M:%S")
                 send.code = f"{send.code:0>6}"
-                send.user_id = int(g_state.userid)
+                send.user_id = session.get('userid', 536)
                 tmp_code = f"{send.code}.{send.shorsz}"
                 tmp_price = float(send.price)
-                logger.info(f"{tmp_code} {tmp_price} {send.volume} {send.type} {g_state.userid}")
+                logger.info(f"{tmp_code} {tmp_price} {send.volume} {send.type} {session.get('userid', 536)}")
                 try:
                     db.session.add(send)
                     db.session.commit()
                     
                     message_data = {
-                        'stg': str(g_state.userid),
+                        'stg': str(session.get('userid', 536)),
                         'type': send.type,
                         'code': tmp_code,
                         'amt': send.volume,
@@ -160,9 +156,9 @@ def place_order():
     # 获取用户最近的委托记录和持仓数据
     form = QueryForm()
     form1 = OrderForm()
-    account = User.query.filter_by(id=g_state.userid).first()
-    stocks = Stock.query.filter_by(user_id=g_state.userid).all()  # 获取持仓数据
-    recent_orders = Sender.query.filter_by(user_id=g_state.userid).order_by(Sender.start_time.desc()).limit(10).all()
+    account = User.query.filter_by(id=session.get('userid', 536)).first()
+    stocks = Stock.query.filter_by(user_id=session.get('userid', 536)).all()  # 获取持仓数据
+    recent_orders = Sender.query.filter_by(user_id=session.get('userid', 536)).order_by(Sender.start_time.desc()).limit(10).all()
     
     # 构建股票代码选项
     stock_choices = [(str(stock.stock_code), f"{stock.stock_code} - {stock.stock_name}") for stock in stocks]
