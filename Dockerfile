@@ -21,8 +21,9 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 COPY --from=builder /app /app
 
-# 确保脚本可执行
+# 设置环境变量
 ENV PATH="/root/.local/bin:${PATH}"
+ENV TZ=Asia/Shanghai
 
 # 暴露端口
 EXPOSE 8001

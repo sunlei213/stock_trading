@@ -74,7 +74,7 @@ class MessageType:
                 if not match_res:
                     continue
                 code = match_res.group(1)
-                current_stock_codes.add(stock)
+                current_stock_codes.add(code)
                 record = Stock.query.filter_by(user_id=user_id, stock_code=code).first()
             # 创建新记录（如果不存在）
                 if not record:
