@@ -6,3 +6,4 @@ logs
 .devcontainer/devcontainer.json
 .devcontainer/devcontainer.json
 .github/dependabot.yml
+app/stocktrading.tar

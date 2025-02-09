@@ -71,14 +71,14 @@
                         <td>{{ trade.no }}</td>
                         <td>{{ trade.stock_code }}</td>
                         <td>{{ trade.stock_name }}</td>
-                        <td>{{ '买入' if trade.type == 'BUY' else '卖出' }}</td>
+                        <td>{{ trade.type }}</td>
                         <td>{{ trade.price }}</td>
                         <td>{{ trade.volume }}</td>
                         <td>{{ trade.price1 }}</td>
                         <td>{{ trade.volume1 }}</td>
                         <td>{{ trade.return_vol }}</td>
                         <td>{{ trade.status }}</td>
-                        <td>{{ '沪' if trade.shorsz == 'XSHG' else '深' }}</td>
+                        <td>{{ trade.shorsz }}</td>
                         <td>{{ trade.msg }}</td>
                     </tr>
                     {% endfor %}

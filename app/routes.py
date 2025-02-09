@@ -158,7 +158,7 @@ def place_order():
     form1 = OrderForm()
     account = User.query.filter_by(id=session.get('userid', 536)).first()
     stocks = Stock.query.filter_by(user_id=session.get('userid', 536)).all()  # 获取持仓数据
-    recent_orders = Sender.query.filter_by(user_id=session.get('userid', 536)).order_by(Sender.start_time.desc()).limit(10).all()
+    recent_orders = Sender.query.filter_by(user_id=session.get('userid', 536)).order_by(Sender.meeting_day.desc(),Sender.start_time).limit(10).all()
     
     # 构建股票代码选项
     stock_choices = [(str(stock.stock_code), f"{stock.stock_code} - {stock.stock_name}") for stock in stocks]
