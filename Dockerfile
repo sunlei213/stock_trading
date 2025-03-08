@@ -9,7 +9,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # 复制项目文件
-COPY . .
+COPY *.py .
+COPY *.service .
+COPY *.md .
+COPY app ./app
+COPY logs ./logs
 
 # 最终阶段
 FROM python:3.11-slim

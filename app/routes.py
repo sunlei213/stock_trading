@@ -78,7 +78,7 @@ def trades():
         trades = Trade.query.filter(
             Trade.send_day.between(start_date, end_date),
             Trade.user_id == user_id
-        ).order_by(Trade.start_time.desc()).all()
+        ).order_by(Trade.send_day.desc(), Trade.start_time.desc()).all()
     else:
         # 默认显示当天数据
         today = datetime.now().strftime('%Y%m%d')
@@ -86,7 +86,9 @@ def trades():
             Trade.send_day == today,
             Trade.user_id == session.get('userid', 536)
         ).order_by(Trade.start_time.desc()).all()
-    
+        form.start_date.data = datetime.now().date()
+        form.end_date.data = datetime.now().date()
+           
     return render_template('trades.html',
                          trades=trades,
                          form=form,
