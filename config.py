@@ -10,6 +10,7 @@ class Config:
     ENABLE_PROFILING = False #是否启用性能分析
     LOG_FILE_MAX_SIZE = 1024 * 1024 * 5 #日志文件最大大小，单位为字节, 默认为5M
     LOG_FILE_BACKUP_COUNT = 2 #日志文件备份数量
+    TDX_HOST = 'shtdx.gtjas.com'
 
 class redisConfig:
     host = 'redis-12870.c302.asia-northeast1-1.gce.redns.redis-cloud.com'

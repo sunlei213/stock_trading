@@ -8,3 +8,4 @@ flask_wtf
 wtforms
 prometheus_client
 gunicorn
+pytdx
