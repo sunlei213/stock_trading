@@ -7,3 +7,8 @@ logs
 .devcontainer/devcontainer.json
 .github/dependabot.yml
 app/stocktrading.tar
+.vscode
+.devcontainer
+.venv
+.mypy_cache
+.github
