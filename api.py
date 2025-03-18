@@ -1,5 +1,4 @@
-from flask import Flask, request, jsonify, render_template
-import json
+from flask import Flask, request, jsonify
 from pytdx.hq import TdxHq_API
 import re
 from datetime import datetime
@@ -76,15 +75,15 @@ def api():
             else:
                 return jsonify({"answer": "无法获取股票数据"}), 500               
         elif type == 'balance':
-            print(f"查询账号：{rec.get('stg','')} 购买记录：{rec}\n")
+            print(f"查询账号：{data.get('stg','')} 购买记录：{data}\n")
         elif type == 'trade':
-            print(f"成交账号：{rec.get('stg','')} 购买记录：{rec}\n")
+            print(f"成交账号：{data.get('stg','')} 购买记录：{data}\n")
         elif type == 'position':
-            print(f"持仓账号：{rec.get('stg','')} 购买记录：{rec}\n")
+            print(f"持仓账号：{data.get('stg','')} 购买记录：{data}\n")
         elif type == 'cancel':
-            print(f"撤单账号：{rec.get('stg','')} 购买记录：{rec}\n")
+            print(f"撤单账号：{data.get('stg','')} 购买记录：{data}\n")
         else:
-            print(f"未知类型：{type} 购买记录：{rec}\n")
+            print(f"未知类型：{type} \n")
             return jsonify({"answer": "未知类型"}), 203
         return jsonify({"answer": '正常'}), 200
     except Exception as e:
