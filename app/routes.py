@@ -56,7 +56,7 @@ def order(data, type):
         now1 = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         logger.info(f"{now1}时间：{rec['time']} {type}账号：{data.get('strategy','')} 金额：{price * amt} 价格：{price} 数量：{amt}")
         message_data = {
-            'stg': data.get('strategy',''),
+            'stg': data.get('strategy','307'),
             'type': type,
             'code': data.get('code', ''),
             'amt': amt,
@@ -80,6 +80,7 @@ def api():
         if type == 'BUY' or type == 'SELL':
             message_data = order(data, type)
             if message_data:
+                 send_msg(message_data)
                  return jsonify({"answer": message_data}), 200
             else:
                 return jsonify({"answer": "无法获取股票数据"}), 500               
@@ -88,6 +89,7 @@ def api():
                 'type': type,
                 'stg': data.get('strategy','537')
             }
+            send_msg(message_data)
             return jsonify({"answer": message_data}), 200
         else:
             logger.error(f"未知类型：{type} \n")
