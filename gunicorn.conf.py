@@ -53,7 +53,7 @@ def child_msg_queue():
         run_once.check_main_thread()
 
 def when_ready(server):
-    logger.info("启动后台服务")
+    logger.info("启动后台服务,版本1.0.0")
     threading.Thread(target=start_monitor_redis, daemon=True).start()
     threading.Thread(target=child_msg_queue, daemon=True).start()
 

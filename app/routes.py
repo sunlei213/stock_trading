@@ -8,6 +8,7 @@ from app.forms import LoginForm, OrderForm, QueryForm, TaskForm, TradeQueryForm
 from datetime import datetime
 from app.logging_config import logger
 from app.tasks import send_msg, start_query
+from config import Config
 
 bp = Blueprint('main', __name__)
 
@@ -15,11 +16,11 @@ def get_price(code):
     match_res = re.compile(r'(\d{6}).([A-Z]{4})').search(code)
     if not match_res:
         logger.error(f"非法的股票代码格式: {code}")
-        return False
+        return None
     tmp_code = match_res.group(1)  # 股票代码
     mkt = 1 if match_res.group(2) == "XSHG" else 0  # # 市场类型（XSHG 或 XSHE）转换为1,0
     api = TdxHq_API()
-    if api.connect('shtdx.gtjas.com',7709):
+    if api.connect(Config.TDX_HOST, 7709):
         stock_data = api.get_security_quotes(mkt,tmp_code)[0]
         data = {
             'code': stock_data['code'],
@@ -33,19 +34,19 @@ def get_price(code):
         return data
     else:
         logger.error("无法连接到行情服务器")
-        return False
+        return None
 
 def order(data, type):
     choice= {
-        'BUY': ['buy', 'b_vol'],
-        'SELL': ['sell', 's_vol']
+        'SELL': ['buy', 'b_vol'],
+        'BUY': ['sell', 's_vol']
     }
     rec = get_price(data.get('code', ''))
     pri = choice[type][0]
     vol = choice[type][1]
     if rec:
         if rec[pri][0] == 0.0:
-            return jsonify({"answer": "已经涨停无法买入" if pri == 'buy' else "已经跌停无法卖出"}), 500
+            return "已经涨停无法买入" if pri == 'sell' else "已经跌停无法卖出", False
         pct = data.get('pct', 0)
         # amt = int(pct / rec[pri][1] / 100) * 100
         amt = pct
@@ -56,16 +57,16 @@ def order(data, type):
         now1 = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         logger.info(f"{now1}时间：{rec['time']} {type}账号：{data.get('strategy','')} 金额：{price * amt} 价格：{price} 数量：{amt}")
         message_data = {
-            'stg': data.get('strategy','307'),
+            'stg': data.get('strategy','537'),
             'type': type,
             'code': data.get('code', ''),
             'amt': amt,
             'price': price,
             'ttype' : ""
         }
-        return message_data
+        return message_data, True
     else:
-        return None
+        return "无法连接TDX服务器", False
 
 @bp.route('/')
 def index():
@@ -78,12 +79,12 @@ def api():
         logger.info(f"收到数据：{data}")
         type = data.get('type', '')
         if type == 'BUY' or type == 'SELL':
-            message_data = order(data, type)
-            if message_data:
-                 send_msg(message_data)
-                 return jsonify({"answer": message_data}), 200
+            message_data, ret = order(data, type)
+            if ret:
+                send_msg(message_data)
+                return jsonify({"answer": message_data}), 200
             else:
-                return jsonify({"answer": "无法获取股票数据"}), 500               
+                return jsonify({"answer": message_data}), 500               
         elif type in ['BALANCE', 'POSITION', 'TRADE']:
             message_data = {
                 'type': type,

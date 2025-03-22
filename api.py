@@ -10,7 +10,7 @@ def get_price(code):
     match_res = re.compile(r'(\d{6}).([A-Z]{4})').search(code)
     if not match_res:
         print(f"非法的股票代码格式: {code}")
-        return False
+        return None
     tmp_code = match_res.group(1)  # 股票代码
     mkt = 1 if match_res.group(2) == "XSHG" else 0  # # 市场类型（XSHG 或 XSHE）转换为1,0
     api = TdxHq_API()
@@ -28,19 +28,22 @@ def get_price(code):
         return data
     else:
         print("无法连接到服务器")
-        return False
+        return None
 
 def order(data, type):
     choice= {
-        'BUY': ['buy', 'b_vol'],
-        'SELL': ['sell', 's_vol']
+        'SELL': ['buy', 'b_vol'],
+        'BUY': ['sell', 's_vol']
     }
     rec = get_price(data.get('code', ''))
+    print(rec)
     pri = choice[type][0]
     vol = choice[type][1]
     if rec:
         if rec[pri][0] == 0.0:
-            return jsonify({"answer": "已经涨停无法买入" if pri == 'buy' else "已经跌停无法卖出"}), 500
+            answer = "已经涨停无法买入" if pri == 'sell' else "已经跌停无法卖出"
+            print(answer)
+            return answer, False
         pct = data.get('pct', 0)
         # amt = int(pct / rec[pri][1] / 100) * 100
         amt = pct
@@ -58,9 +61,9 @@ def order(data, type):
             'price': price,
             'ttype' : ""
         }
-        return message_data
+        return message_data,True
     else:
-        return None
+        return "无法连接TDX服务器", False
 
 @app.route('/api', methods=['POST'])
 def api():
@@ -69,13 +72,13 @@ def api():
         print(f"收到数据：{data}")
         type = data.get('type', '')
         if type == 'BUY' or type == 'SELL':
-            message_data = order(data, type)
-            if message_data:
+            message_data, ret = order(data, type)
+            if ret:
                  return jsonify({"answer": message_data}), 200
             else:
-                return jsonify({"answer": "无法获取股票数据"}), 500               
-        elif type == 'balance':
-            print(f"查询账号：{data.get('stg','')} 购买记录：{data}\n")
+                return jsonify({"answer": message_data}), 500               
+        elif type in ['POSITION', 'BALANCE', 'TRADE']:
+            print(f"{type}：{data.get('strategy','')} 购买记录：{data}\n")
         elif type == 'trade':
             print(f"成交账号：{data.get('stg','')} 购买记录：{data}\n")
         elif type == 'position':
